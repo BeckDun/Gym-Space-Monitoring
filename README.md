@@ -1,13 +1,9 @@
 # Gym Space Monitoring (GSM)
 
-**Team T01** — CS 460 Software Engineering
+**Team T01** — CS 460 Software Engineering  
 Beckett Dunlavy (manager), Aditya Chauhan, Christian Maestas, Oscar McCoy, Isaac Tapia
 
----
-
-## What It Is
-
-A real-time monitoring system for a private residential gym (~300–500 residents, ~6,000 sq ft). The system detects falls, conflicts, overcrowding, and biometric anomalies, and surfaces alerts to staff tablets. It also logs usage data for management reports.
+Real-time monitoring system for a private residential gym (~300–500 residents, ~6,000 sq ft). Detects falls, conflicts, overcrowding, and biometric anomalies. Surfaces alerts to staff tablets and logs usage data for management reports.
 
 ---
 
@@ -18,7 +14,7 @@ A real-time monitoring system for a private residential gym (~300–500 resident
 | Backend | Python 3.12, FastAPI |
 | Database | PostgreSQL (TimescaleDB) + SQLAlchemy |
 | AI/MLLM | Google Gemini API |
-| Frontend | React 18, Vite, Tailwind CSS |
+| Frontend | Vanilla JS, HTML/CSS |
 | Real-time | WebSockets |
 | Simulations | Python scripts (mock sensor payloads) |
 
@@ -26,34 +22,31 @@ A real-time monitoring system for a private residential gym (~300–500 resident
 
 ## Architecture
 
-The system follows an **event-driven architecture** with two pipelines:
+Event-driven, two pipelines:
 
 - **Real-time alerting** — video/wristband data → MLLM/detection modules → System Controller → Staff Tablet
 - **Observational** — passive logging → Database Controller → Usage Report Generator → Management Dashboard
-
-See `docs/` for the full SAD, SRS, and RDD.
 
 ---
 
 ## Repository Structure
 
 ```
-gsm-system/
-├── backend/                    # Python/FastAPI core
-│   └── app/
-│       ├── api/                # sensor_interface.py, device_driver.py
-│       ├── core/               # system_controller.py, config.py
-│       ├── db/                 # database_controller.py, models.py
-│       └── services/           # occupancy_manager, mllm_processor, detection, report_generator
-├── frontend/                   # React/Vite/Tailwind
-│   └── src/
-│       ├── components/         # Shared UI components
-│       ├── views/              # StaffTablet.jsx, ManagementDash.jsx
-│       └── services/           # websocketClient.js, apiClient.js
-├── simulations/                # Mock sensor payloads (Phase 1 hardware replacement)
-│   ├── d_driver/               # video_mock.py
-│   └── s_driver/               # biometric_mock.py, occupancy_mock.py
-└── docs/                       # SAD, SRS, RDD
+├── backend/
+│   ├── sensor/         # sensor_interface.py, sensor_driver.py, device_driver.py
+│   ├── processing/     # mllm_processor.py, fall_detection.py, conflict_detection.py,
+│   │                   # occupancy_manager.py, biometric_analysis.py
+│   ├── controller/     # system_controller.py
+│   ├── db/             # database_controller.py, models.py
+│   ├── reporting/      # usage_report_generator.py
+│   └── main.py
+├── frontend/
+│   ├── staff_tablet/           # Staff alert dashboard
+│   └── management_dashboard/   # Usage reports and analytics
+├── demos/              # Simulation scripts for each use case
+├── database/
+│   └── schema.sql
+└── docs/               # SAD, SRS, RDD
 ```
 
 ---
@@ -62,24 +55,22 @@ gsm-system/
 
 ### Backend
 ```bash
-cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # add Gemini API key and DB credentials
-uvicorn app.main:app --reload
+# add Gemini API key and DB credentials to config.py or .env
+uvicorn backend.main:app --reload
 ```
 
 ### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
+Open `frontend/staff_tablet/index.html` or `frontend/management_dashboard/index.html` in a browser.
 
-### Simulations
+### Run Demos
 ```bash
-python simulations/s_driver/occupancy_mock.py
-python simulations/d_driver/video_mock.py
+python demos/fall_detection_demo.py
+python demos/abnormal_heart_rate_demo.py
+python demos/overcrowding_demo.py
+python demos/conflict_detection_demo.py
+python demos/equipment_usage_demo.py
 ```
 
 ---
