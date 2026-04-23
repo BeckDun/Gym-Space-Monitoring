@@ -1,0 +1,259 @@
+﻿Gym Space Monitoring (GSM)
+ 
+Software Requirements Specification
+ 
+SRS Version 2.0
+ 
+Team T01
+9 April 2026 
+
+
+
+
+Beckett Dunlavy (Manager)
+Aditya Chauhan
+Christian Maestas
+Oscar McCoy
+Isaac Tapia
+
+
+
+
+  
+CS 460 Software Engineering
+________________
+Table of Contents
+1   Introduction        3
+2   General Description        3
+3   Specific Requirements        4
+3.1 Use Cases        5
+3.2 External Interfaces        7
+3.3   Control Logic        10
+4   Software Design Constraints        14
+5   Definition of Terms        16
+6   Conclusion        17
+7   References        18
+
+
+ 
+
+
+ 
+________________
+1   Introduction
+Modern fitness facilities often contain a single large workout space organized into functional exercise zones that support different forms of physical activity, including machine-based workout areas and shared movement areas between equipment zones. In private residential communities, these spaces are used by patrons with different exercise habits, fitness levels, and health conditions, and their usage may vary considerably throughout the day. Within this setting, maintaining awareness of occupancy, activity, and safety-related conditions is important for both patron well-being and effective facility operation.
+
+
+The purpose of this Software Requirements Specification (SRS) is to define the functional and non-functional requirements for the Gym Space Monitoring (GSM) system. GSM is an automated monitoring and reporting system designed for a private, free-access indoor fitness facility of approximately 6,000 square feet, serving 300 to 500 residents. The system leverages multimodal AI technology, wearable devices, and equipment sensors to enhance patron safety and operational efficiency without requiring continuous manual supervision.
+The GSM system maintains real-time awareness of gym conditions by processing video feeds through a Multimodal Large Language Model (MLLM) to detect safety incidents like falls or conflicts, while simultaneously monitoring member biometrics and location via mandatory gym-issued wristbands. This document establishes the requirements for the system’s alerting pipeline, real-time monitoring dashboard, and long-term usage reporting.
+This document presents the requirements for the Gym Space Monitoring (GSM) system. Section 2 provides the general description of the system and its operating environment. Section 3 defines the specific requirements of the GSM, including its use cases, external interfaces, and control logic. Section 4 identifies the software design constraints that affect system behavior and implementation. Section 5 defines the technical terms used throughout the document. Section 6 concludes the document, and Section 7 provides the references used in its preparation. 
+2   General Description
+The GSM system manages patron safety and facility utilization within a residential gym environment. The system operates by integrating three primary input sources: video cameras, smart wristband wearables, and equipment sensors. The system identifies members as they tap in at the entrance, opening a session that tracks their location and biometrics (heart rate, blood oxygen, ECG) throughout their workout. An internal processing pipeline uses MLLM to analyze video data for critical events like falls or aggressive interactions. When thresholds are crossed, the system generates alerts (Informational, Warning, or Critical) delivered to staff.
+
+
+An observational pipeline collects long-term data on occupancy levels, equipment usage frequency, and time-of-day patterns. This information is compiled into periodic management reports to support decisions regarding facility layout and staffing. Members also receive private haptic and visual notifications on their wristbands if abnormal heart rates are detected, allowing for self-correction before staff intervention
+  
+
+Figure 1: GSM Physical Systems Block Diagram
+
+
+Figure 1 illustrates the operational relationships between the GSM input and output components. The system operates by integrating data from three primary input sources: ceiling-mounted video cameras, smart wristband wearables, and equipment sensors. This data is processed through the GSM internal logic pipeline, which includes multimodal AI analysis for safety incidents and biometric monitoring. Based on this processing, the system generates real-time outputs including tiered staff alerts, dashboard updates, and private wristband notifications to members, as well as periodic management reports.
+
+
+3   Specific Requirements
+The GSM must process a variety of input and output signals in order to monitor patron safety, track gym occupancy and activity, and support operational decision-making for the residential fitness facility. This section specifies the external interfaces that the GSM interacts with and the signals exchanged between the system and its environment. The Logical Diagram (Figure 2) provides a logical diagram of all system input and output signals.
+The GSM receives input signals from ceiling-mounted video cameras, gym-issued wristband wearables, and sensors embedded in smart strength machines. Based on its internal logic and the current system state, the GSM produces output signals that deliver tiered alerts to gym staff, update a real-time monitoring dashboard, generate private wristband notifications to members, and compile periodic usage reports for management. Each interface is described in terms of its source or destination device, the signal it carries, and its role in maintaining the system state.
+3.1 Use Cases
+In the following section, 5 different use cases for the gym are provided. Each use case has an actor, causes input events, and demonstrates possible scenarios for a member.
+
+
+Fall Detection
+This use case describes the high-priority detection of a member falling and the subsequent generation of a critical alert for staff.
+Primary Actor: Member
+Goal: To identify a fall incident and ensure immediate staff intervention.
+Preconditions: The member has an active session and is in a zone monitored by cameras.
+Trigger: The member collapses or falls, and the system's vision logic detects the change in their physical state.
+Scenario:
+1. The Member accidentally falls while exercising in a monitored zone.
+2. The cameras identify the fall and in which area the member is in.
+3. The gym staff is alerted of the fall.
+4. Staff view the alert, see the member's identity and location, and arrive at the zone to provide aid.
+5. Once the situation is handled, Staff mark the incident as resolved on their tablet.
+Abnormal Heart Rate Detection
+This use case describes monitoring a member's heart rate against their specific health profile and alerting both the member and staff of abnormalities.
+Primary Actor: Member
+Goal: To detect potential medical distress based on individualized health thresholds.
+Preconditions: The member has an active gym session and is wearing a functioning, gym-issued wristband.
+Trigger: A member's heart rate signal exceeds or falls below safe thresholds defined in their stored health profile.
+Scenario:
+1. While exercising, the Member's heart rate exceeds the safe threshold defined in their personal health profile.
+2. The Member receives a private haptic vibration and visual warning directly on their Wristband.
+3. The Member observes the notification and chooses to reduce their exercise intensity.
+4. The Member continues to monitor the wristband until their heart rate returns to a normal range.
+5. The gym staff is also alerted and may decide to respond to investigate based on their health profile and check on gym member.
+Overcrowding Detection
+This use case describes monitoring gym zone occupancy and notifying staff when capacity limits are approached.
+Primary Actor: Member
+Goal: To maintain a safe and organized gym environment in accordance with facility occupancy limits.
+Preconditions: Video monitoring and wristband location tracking are active in the affected zones.
+Trigger: The member enters a zone, or stays in a zone, where the patron count reaches the defined capacity limit.
+Scenario:
+1. The Member is working out in a zone that is becoming overcrowded
+2. The area becomes overcrowded and gym staff is alerted
+3. The gym staff may view the alert and decide how to manage the crowd if needed
+4. The Member is able to continue their workout in a safer, less congested environment
+Member-to-Member Conflict
+This use case describes the detection of aggressive interactions between patrons and the resulting staff alert.
+Primary Actor: Member
+Goal: To preserve patron safety and facility order by identifying physical altercations.
+Preconditions: Video monitoring is active across shared gym spaces and gym member is working out in an area of the gym.
+Trigger: Two or more patrons in the gym begin an altercation of some sort or begin to give signs that an altercation with another patron is possible.
+Scenario:
+1. The Member is approached by another patron who begins acting aggressively or threateningly or two other patrons begin acting aggressively near our gym member
+2. If the behavior of patrons is getting out of control or is identified as possibly dangerous, the gym staff is alerted.
+3. The gym staff are notified of the location and description of the event
+4. The gym staff will respond immediately to and act in a way to deescalate the situation
+5. The member will be removed from the area and can workout in a safer area or may be removed completely to ensure the safety of patrons.
+6. The gym staff mark the situation for future reference if needed.
+Equipment Usage Reporting
+This use case describes the long-term collection and aggregation of equipment data into management reports.
+Primary Actor: Member
+Goal: To have their exercise data accurately logged for long-term progress tracking
+Preconditions: Member arrived at the gym and is ready to workout
+Trigger: The member taps their wristband against the machine's reader to begin a set.
+Scenario:
+1. The Member taps into a machine.
+2. The Member completes their set, and their reps, sets, and resistance are tracked.
+3. Member will have this data linked to their account for viewing later
+4. The member leaves the gym and views their tracked progress to prepare themselves for their next gym session.
+3.2 External Interfaces
+In order to monitor patron safety, maintain real-time awareness of gym conditions, and support long-term facility analysis, the GSM must interact with a set of external interfaces. The external input devices inform the GSM about the current state of the gym in terms of patron presence, member biometrics, location, and equipment usage. The GSM processes the information it receives and reacts by issuing tiered staff alerts, updating the monitoring dashboard, sending private notifications to member wristbands, and producing scheduled management reports. The interfaces are organized below into input events and output events.
+  
+
+Figure 2: Logical Diagram
+
+
+Figure 2 describes the logical diagram of the system. The grey boxes represent components outside of our system, but that provide input to the different systems we have to detect events. Additionally, the system leverages an external Multimodal Large Language Model (MLLM) to process continuous video input for the detection of safety and occupancy events.
+Input Events
+Input events represent signals from external devices that inform the GSM about changes in the gym's physical state, patron conditions, and equipment usage. These events drive the system's internal state transitions and determine the appropriate output actions.
+Continuous Video Feed Source Device: Ceiling-Mounted Cameras: The feed is produced continuously by overhead cameras installed throughout the monitored gym zones. This feed is streamed to the GSM and passed to the Fall detection, Conflict detection, and Occupancy detection black boxes in the GSM. The MLLM returns structured text descriptions that the overall GSM uses to drive its alerting pipeline.
+Member Session Entry Signal Source Device: Entrance NFC/RFID Reader: The signal is produced when a member taps their gym-issued wristband against the reader at the gym entrance. This signal registers the member as present in the facility, opens a session record, and activates real-time monitoring for that individual.
+Member Session Exit Signal Source Device: Entrance NFC/RFID Reader: Produced when a member taps their wristband against the reader upon leaving the facility. This signal closes the member's active session record and updates the GSM's occupancy counts accordingly.
+Wristband Biometric Signal Source Device: Gym-Issued Wristband Wearable: Continuously transmitted by each member's wristband throughout an active session. This signal carries the member's real-time heart rate and is compared against safe operating thresholds derived from that member's stored health profile. Deviations from these thresholds trigger the GSM to generate alerts.
+Wristband Location Signal Source Device: Gym-Issued Wristband Wearable: Continuously transmitted alongside the biometric signal, this signal reports the member's current position within the gym. It allows the GSM to maintain real-time zone-level occupancy counts and to attach location information to staff alerts so responders can quickly locate affected patrons.
+Wristband Member Profile Data Source Device: Gym-Issued Wristband Wearable: Transmits static member profile data stored on the wristband during onboarding, including age, BMI, activity level, and medical history flags. This data is referenced by the GSM to contextualize real-time biometric readings, since acceptable thresholds vary between members based on their individual health profiles. Only data from members who provided informed consent during the membership agreement process is processed.
+Equipment Tap-In Signal Source Device: Smart Strength Machine NFC/RFID Reader: Produced when a member taps their wristband against a reader on a smart strength machine. This signal associates the member's identity and health profile with that specific machine for the duration of use, allowing the GSM to link subsequent equipment sensor data to the correct member.
+Equipment Sensor Data Source Device: Smart Strength Machine Sensors: Produced by sensors embedded in smart strength machines. This data includes resistance level, repetition count, and the current usage state of the machine (active or idle). The GSM uses this data to track individual workout activity and compile equipment usage statistics over time.
+Output Events
+Output actions are performed by the GSM in order to notify staff, inform members, and support facility management. These actions are produced after processing the input events the system has received and evaluating the current internal state. Output actions control staff notification channels, the monitoring dashboard, member-facing wristband notifications, and report generation.
+Informational Alert Notification Destination Device: Staff Monitoring Dashboard and Staff Tablets: Produced when the GSM detects a condition that has been logged automatically but does not require immediate staff action, such as the gym approaching its occupancy threshold. This output includes the affected zone and a description of the detected condition.
+Warning Alert Notification Destination Device: Staff Monitoring Dashboard and Staff Tablets: Produced when the GSM detects a condition that staff should investigate in a timely manner, such as a member's heart rate deviating abnormally from their health profile thresholds. This output includes the alert level, the affected zone, the member location when applicable, and a description of the detected condition.
+Critical Alert Notification Destination Device: Staff Monitoring Dashboard and Staff Tablets: Produced when the GSM detects a condition requiring immediate staff intervention, such as a fall or a physical altercation identified through the MLLM-processed video feed. This output includes the alert level, the affected zone, the member location when applicable, and a description of the detected event so staff can respond promptly.
+Wristband Warning Signal Destination Device: Gym-Issued Wristband Wearable: Produced when the GSM detects an abnormal heart rate for a specific member. This output consists of a haptic vibration sequence and a visual indication on the member's wristband, providing a private and immediate notification that allows the member to adjust their activity level or seek assistance before staff intervention becomes necessary.
+Real-Time Dashboard Update Signal Destination Device: Staff Monitoring Dashboard: Continuously produced by the GSM to refresh the staff-facing dashboard with current gym conditions. This output updates active alerts, zone-level occupancy counts, member locations, and equipment usage states, giving staff situational awareness of the entire facility from a single interface.
+Periodic Management Usage Report Destination Device: Management Reporting Interface: Produced on a scheduled basis (hourly, daily, weekly, or monthly, depending on configuration) by the GSM's observational data collection pipeline. This output summarizes historical usage data, including occupancy summaries, equipment usage frequency rankings, time-of-day and day-of-week activity patterns, crowded-zone identification, underutilized equipment, and patron density maps derived from wristband location data. These reports support management decisions about equipment needs, layout adjustments, and staffing allocation.
+3.3   Control Logic
+In this section, we use OMT dynamic models to demonstrate our technical approach. The global dynamic diagram shows the top-level flow of the GSMS, while the remaining diagrams describe the behavior of specific monitoring and detection functions.
+
+
+Global Dynamic Diagram
+Figure 3 illustrates the top-level dynamic behavior of the Gym Space Monitoring (GSM) system during normal operation. The diagram shows how the system moves from initialization into active monitoring, issues staff notifications when a detection event occurs, and logs incidents once alerts are resolved. It also shows how observational data supports the generation of management reports on occupancy, equipment usage, and activity patterns.
+
+
+  
+
+Figure 3: Global Dynamic Diagram
+________________
+Wristband Interface Diagram
+Figure 4 illustrates the dynamic behavior of the GSM wristband interface during member monitoring. The diagram shows how the wristband transitions from an idle state into an active session after member tap-in, loads the member’s health profile data, and monitors incoming wristband signals during gym use. It also shows how heart rate signals are evaluated to determine when a warning alert is triggered or re-triggered, and how machine tap-in events support the verification of usage risks based on the member’s health profile.
+
+
+  
+
+
+
+Figure 4: Wristband Interface Diagram
+
+
+Overcrowding Detection Dynamic Diagram
+Figure 5 illustrates the dynamic behavior of the GSM during overcrowding detection. The diagram shows how the system begins in an idle state, receives zone occupancy count updates, and verifies those counts against the defined occupancy threshold. When occupancy approaches the threshold, the system triggers an informational alert; when occupancy reaches or exceeds the threshold, it triggers a warning alert. The diagram also shows how alerts are re-triggered if the condition remains unresolved and how the system returns to the idle state once the occupancy level falls below the threshold or the condition is resolved.
+
+
+  
+
+
+
+Figure 5: Overcrowding Detection Dynamic Diagram
+
+
+
+
+
+
+
+
+Incident Detection Dynamic Diagram
+Figure 6 illustrates the dynamic behavior of the GSM during incident detection. The diagram shows how the system remains in an idle monitoring state until a possible fall or member-to-member conflict is detected, then evaluates the severity of the event before determining the appropriate alert response. Low-severity events are flagged as inconclusive, while higher-severity events cause the system to issue a warning or critical alert. If the incident remains unresolved, the alert is re-triggered until staff intervention occurs and the condition is resolved.
+
+
+  
+
+
+
+Figure 6:  Incident Detection Dynamic Diagram 
+4   Software Design Constraints
+The Gym Space Monitoring (GSM) system operates within specific legal, physical, and technological boundaries. These constraints define the limits of the system's operational environment and the conditions under which it maintains data integrity and user safety.
+
+
+
+Legal and Regulatory Constraints
+The software logic must be designed to enforce the following legal and privacy boundaries:
+* Privacy and Consent: The system only processes data for members who have provided explicit, documented consent for video and wearable monitoring. This consent is captured via an informed consent clause within the facility's standard membership agreement. Per facility policy, membership is contingent upon this consent; therefore, the system has no legal authority to monitor or store data for non-consenting parties [1].
+* Health Data Compliance (HIPAA): The storage and transmission of health information, such as medical conditions or heart rate data, adheres to HIPAA-standard protocols for data encryption and access control. While the gym functions as a fitness facility, the system maintains "HIPAA-grade" security to protect sensitive member data from unauthorized access [2].
+* Biometric Data Retention: The system complies with state regulations regarding the retention of biometric identifiers (such as skeletal-tracking data). The software executes a periodic deletion protocol that removes non-essential biometric records once the initial purpose for collection is satisfied or after a fixed period of member inactivity [3]
+* Privacy-Exclusion Zones: In accordance with privacy laws, the system lacks any video or sensor coverage in restrooms, changing areas, and locker rooms. These areas are "dark" to the system to prevent illegal biometric or visual data collection [4].
+* Occupancy Limits: The system’s overcrowding alerts are governed by local fire codes, which typically mandate a minimum of 50 square feet per person in exercise areas to ensure safe egress [5].
+
+
+Operational and Technical Constraints
+These constraints define the boundaries of the software's input processing and its behavior during infrastructure failures.
+* Machine-Only Scope: The system is physically constrained to monitoring "Smart Strength" machines (e.g., EGYM or Technogym Biostrength). It has no mechanism to track or log activity involving free weights or non-digital accessories, as the facility does not provide them [6][7].
+* Consensus of Data: Performance metrics such as repetition count, sets, and weight resistance are limited to the digital data output provided by the machine's integrated sensors. The system cannot record movements that occur outside of the machine's primary digital interface.
+* Camera Field of View and Occlusion: Monitoring accuracy is constrained by the physical line-of-sight of the cameras. The system cannot analyze behavior in "blind spots" created by large exercise machines, structural pillars, or overcrowding, where one patron’s body physically blocks the view of another.
+* Network Connectivity Dependency: The system's real-time MLLM-based video analysis requires a stable internet connection to communicate with external AI service providers. In the event of a network outage, the system is limited to local data logging and cannot perform behavioral interpretation of video feeds until connectivity is restored.
+* Power Availability: The GSM's monitoring infrastructure, including cameras, wristband receivers, and equipment sensors, requires continuous facility power to operate. A power failure degrades or disables monitoring capabilities until power is restored.
+* Wristband Charge and Functionality: Because patron identification, health monitoring, and location tracking are fully dependent on the gym-issued wristband, a wristband that loses battery charge or malfunctions mid-session results in loss of all associated monitoring data for that patron until the device is replaced or recharged.
+
+AI and LLM “Black Box” Constraints
+Because the system utilizes external Multimodal Large Language Models (MLLMs) as third-party services, it is subject to the following inherent limitations:
+* API Availability: The system’s real-time analysis is dependent on the uptime and service-level agreements (SLAs) of the external AI providers. During provider outages, the system remains in a "data-log only" state without behavioral interpretation.
+* Processing Latency: The system’s response time is constrained by the "round-trip" inference time of the external API. Alerts are subject to a fixed delay caused by the time required to transmit data to the cloud and receive a processed response.
+* Output Non-Determinism: Because the MLLM functions as a "black box," it may describe identical physical actions using different linguistic terms (e.g., "resting" vs. "sitting"). The system's internal logic is constrained to handle this variability in text-based outputs.
+5   Definition of Terms
+The following terms are used within the Gym Space Monitoring (GSM) Software Requirements Specification (SRS):
+* ADA (Americans with Disabilities Act): A federal civil rights law that mandates specific physical clearances and accessibility standards for exercise equipment.
+* Biometric Data: Unique physical or biological characteristics, such as heart rate, blood oxygen, or ECG data, used to identify or monitor individuals.
+* Critical Alert: A high-priority system alert indicating a condition requiring immediate staff intervention, such as a detected fall or physical altercation.
+* GSM: Gym Space Monitoring system—the automated monitoring and reporting system defined in this document.
+* HIPAA (Health Insurance Portability and Accountability Act): National standards for the protection of sensitive health information, followed by the GSM for data encryption and access control.
+* Informational Alert: A system alert indicating a condition that has been logged automatically but requires no immediate staff action, such as approaching occupancy thresholds.
+* Informed Consent: The documented agreement provided by members that allows the system to process their video and wearable data.
+* MLLM (Multimodal Large Language Model): An external AI service used to process video feeds and produce structured text descriptions of detected safety or occupancy events.
+* Session: The period beginning when a member taps their wristband at the gym entrance and ending when they tap out upon departure.
+* Smart Strength Machine: A digitally-enabled exercise machine equipped with sensors that provide data on resistance, repetitions, and usage state.
+* Tap-In: The action of a member touching their wristband to an NFC/RFID reader to register presence at the entrance or associate themselves with a specific machine.
+* Warning Alert: A system alert indicating a condition that staff should investigate in a timely manner, such as an abnormal heart rate.
+* Wristband: A gym-issued smart wearable device worn by members to transmit biometric and location data and support NFC/RFID functionality.
+
+
+6   Conclusion
+This SRS defines the requirements for the Gym Space Monitoring System (GSM) and is the baseline for design, implementation, and testing. Due to patron safety and facility awareness, depending on the continuous and coordinated processing of video, biometrics, location, and equipment data, the GSM must maintain accurate real-time states of all given gym zones to prevent any missed incidents and uniformed operational decisions. Additionally, this document specifies the required external interfaces, use cases, and control logic that govern fall detection, conflict detection, occupancy monitoring, wristband biometric alerting, and usage data collection. Future project work will use this SRS as the source of truth when validating system behavior and resolving requirement ambiguities.
+________________
+7   References
+[1] Gym Lawyers. "Navigating Consent Laws for Recording in Your Gym: A Must-Know for Gym Owners." Gym Lawyers. https://www.gymlawyers.com/general-legal-principles/navigating-consent-laws-for-recording-in-your-gym-a-must-know-for-gym-owners
+[2] U.S. Department of Health & Human Services. "HIPAA Security Rule." HHS.gov. https://www.hhs.gov/hipaa/for-professionals/security/laws-regulations/index.html
+[3] Illinois General Assembly. "Biometric Information Privacy Act (BIPA)." ILGA.gov. https://www.ilga.gov/Legislation/ILCS/Articles?ActID=3004&ChapterID=57
+[4] Eufy. "Are Security Cameras Allowed in Gyms?" Eufy Blog. https://www.eufy.com/blogs/security-camera/gym-security-cameras
+[5] Certified Commercial Property Inspectors Association. "Occupancy Load Signs." CCPIA.org. https://ccpia.org/occupancy-load-signs/
+[6] EGYM. "Smart Strength Training." EGYM US. https://us.egym.com/en-us/workouts/smartstrength
+[7] Technogym. "Biostrength." Technogym US. https://www.technogym.com/en-US/biostrength/

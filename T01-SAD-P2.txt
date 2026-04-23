@@ -1,0 +1,283 @@
+﻿Gym Space Monitoring (GSM)
+ 
+Software Architecture Design 
+SAD Version 1.0
+ 
+Team T01
+21 April 2026 
+
+
+
+
+
+
+Beckett Dunlavy (manager)
+Aditya Chauhan
+Christian Maestas
+Oscar McCoy
+Isaac Tapia
+
+
+
+
+  
+CS 460 Software Engineering
+________________
+Table of Contents 
+1   Introduction        3
+2   Design Overview        3
+2.1   Design Approach        4
+2.2   Architecture Diagram        4
+2.3   Design Explanation        5
+3   Component Specifications        7
+4   Sample Use Cases        10
+5   Design Constraints        12
+6   Definition of Terms        14
+7   Implemented Components        15
+
+
+
+
+ 
+________________
+1   Introduction
+Modern fitness facilities in private residential communities serve patrons with different exercise habits, fitness levels, and health conditions, with usage varying considerably throughout the day. The Gym Space Monitoring (GSM) system is defined for a private residential community of approximately 300 to 500 residents and for a single open gym floor of approximately 6,000 square feet, organized into monitored exercise zones. Because the gym serves a defined residential population and is expected to provide a high-quality experience, monitoring must extend beyond simple occupancy counting to include awareness of current gym conditions and longer-term usage patterns.
+The primary objective of the GSM system is to enhance the safety and operational efficiency of the residential fitness facility. It addresses situations such as overcrowding, uneven space usage, and possible incidents that may require staff attention, while also supporting the collection of usage information to assist with operational decisions. This facilitates a high-quality, data-driven experience for residents while minimizing the necessity for continuous manual supervision.
+To achieve this, the GSM operates by integrating data from three primary input sources: ceiling-mounted video cameras, gym-issued smart wristband wearables, and smart strength machine sensors. The system leverages a Multimodal Large Language Model (MLLM) to process continuous video input for the detection of safety and occupancy events. Simultaneously, the system monitors member biometrics (such as heart rate) and physical location via mandatory gym-issued wristbands.
+The purpose of this Software Architecture Design (SAD) is to describe the abstractions and component interactions required to meet all stakeholder goals and safety requirements. This document is organized as follows: Section 2 describes the design approach and includes the architecture design diagram. Section 3 provides detailed component specifications and describes their interactions. Section 4 presents sample use cases illustrating the system in operation. Section 5 outlines the design constraints, including legal, physical, and technical boundaries. Section 6 contains a glossary of technical terms used throughout this document. Section 7 identifies the components selected for implementation in the demo and outlines the planned development timeline for those components. 
+2   Design Overview
+This section presents the high-level architectural design of the Gym Space Monitoring (GSM) system. The GSM is designed to support real-time monitoring of activity within a private residential gym by processing data from ceiling-mounted cameras, gym-issued wristbands, and smart strength equipment sensors. The architecture is based on the functional and safety requirements defined in the SRS and reflects the technical constraints identified during the requirements and design analysis process. 
+2.1   Design Approach
+The Gym Space Monitoring (GSM) system employs an event-driven architecture. In this design, the system continuously processes real-time data from three primary physical input sources: ceiling-mounted video cameras, gym-issued smart wristband wearables, and smart strength equipment sensors.
+This architecture was chosen because the GSM must simultaneously handle streams of unstructured data (video feeds) and continuous streams of structured telemetry data (biometrics and location). To handle this efficiently, the architecture is separated into two pipelines: a real-time monitoring and alerting pipeline and an observational data collection pipeline.
+For real-time analysis, the architecture relies on an external Multimodal Large Language Model (MLLM) to analyze video feeds for physical events (e.g., falls and conflicts). In parallel, independent controllers evaluate wristband biometric data against individualized health profiles. The event-driven nature ensures the system reacts to real-world changes, such as a member's heart rate crossing a safe threshold or a physical altercation occurring, and immediately routes alerts (Informational, Warning, or Critical) to the appropriate staff interfaces and member wristbands. The observational pipeline passively logs occupancy and equipment usage data to generate scheduled management reports and user reports without interrupting real-time monitoring.
+2.2   Architecture Diagram
+The following architecture diagram (Figure 1) illustrates the software architecture of the GSM. Software components are shown as labeled boxes, with arrows indicating the direction and nature of data flow between them. The yellow boxes are external components to our system (MLLM). External interfaces appear at the top and bottom edges of the diagram. The purple box is the database controller, which handles queries and transactions to and from the database, given input from devices or components. 
+  
+
+
+
+Figure 1: GSM Architecture Diagram
+________________
+2.3   Design Explanation
+The architecture consists of interconnected software components and external interfaces that process real-time gym data. The following list explains the role of each component shown in the architecture diagram and how they interact to fulfill the system requirements.
+Sensor Interface & Drivers (S Driver / Device Driver)
+The Sensor Interface serves as the abstraction layer between the physical input devices and the core processing logic. It receives raw data from the Sensor Drivers (S Driver) and Device Drivers (D Driver) connected to the ceiling cameras, gym-issued wristbands, and smart machine sensors. It normalizes this data and routes it to the appropriate analysis modules.
+MLLM Processor (Analyze video)
+This component represents the integration with the external Multimodal Large Language Model. It continuously receives and analyzes the video feeds from the ceiling cameras to interpret physical actions and generate structured text descriptions of events happening on the gym floor every 5-10 seconds.
+Conflict Detection
+This module continuously monitors the output generated by the MLLM Processor. It identifies potential aggressive or physically threatening interactions between members. When a conflict is detected, it triggers a warning or critical alert to the System Controller, sending all the metadata about the alert.
+Fall Detection 
+This module monitors the MLLM output to identify if a member has collapsed or fallen to the ground. Upon confirming a fall event, it immediately triggers a critical alert for staff intervention to the system controller.
+Biometric Analysis
+This component processes the continuous stream of biometric data from active wristbands. It compares real-time heart rate readings against the specific safe-operating thresholds stored in that member's health profile, which is stored in the database. If an unsafe reading is detected, it generates an alert, which is sent to the system controller.
+Occupancy Manager
+This module maintains real-time tracking of patron density across the facility. By processing the location signals transmitted from the wristbands, it tracks the number of patrons present in each defined gym zone and triggers alerts to the system controller if a zone exceeds its safe capacity limit.
+________________
+System Controller
+The System Controller acts as the central coordinator for the real-time alerting pipeline. It receives alert triggers from the Biometric Analysis, Occupancy Manager, Conflict Detection, and Fall Detection modules. It forwards alerts to the correct devices and sends alert logs to the Database Controller.
+Database Controller
+This component manages all interactions with the Data Store. It handles all transaction and query (T/Q) requests, continuously logging weight-lifting data, biometric/occupancy data, and system alerts to build the datasets required for the observational pipeline.
+MLLM (Usage Report Generator)
+This component accesses the historical data logged by the Database Controller to compile and generate management usage reports. These reports summarize equipment usage frequency, time-of-day activity patterns, and zone-level occupancy trends for the Management Dashboard.
+Device Driver
+The Device Driver is responsible for translating software alerts into physical devices. It receives critical and warning alerts from the System Controller and pushes them to the Staff Tablets for immediate review. It also pushes private warnings directly to the member's Wristband Screen
+3   Component Specifications
+The following section provides a detailed breakdown of the software components noted in the GSM architecture. Each specification defines the internal state, or Variables, and the operational capabilities, or Methods, required for the component to fulfill its role within the system. These specifications serve as the blueprint for the implementation phase. These specifications ensure that data flow from the initial sensor detection to the real-time display updates is handled through standardized interfaces.
+
+
+Sensor Interface
+Variables:
+* RawSignal currentSignal; Represents the most recent unstructured signal captured from a ceiling camera, residential wristband, or smart equipment sensor.
+Methods:
+* public Event normalizeSignal(RawSignal) { converts raw hardware telemetry into standardized system events for routing to the appropriate analysis pipeline }
+Conflict Detection
+Variables:
+* String mllmTextOutput; The latest structured event description provided by the external Multimodal Large Language Model Processor.
+* float conflictConfidence; The minimum algorithmic threshold required to confirm an aggressive member-to-member interaction.
+Methods:
+* public void analyzeMLLMOutput(String mllmTextOutput) { parses the processed video descriptions to identify potential physical altercations or threats }
+* public void triggerAlert(AlertSeverity, ZoneID) { dispatches confirmed conflict metadata to the System Controller for staff intervention }
+Fall Detection
+Variables:
+* String mllmTextOutput; The continuous text-based analysis of the video stream returned by the MLLM Processor.
+* float fallConfidence; The minimum statistical probability necessary to validate a detected fall event.
+Methods:
+* public void analyzeMLLMOutput(String mllmTextOutput) { identifies patterns in the MLLM data indicating a patron has collapsed or fallen }
+* public void triggerAlert(AlertSeverity, ZoneID) { passes high-priority fall events and location data to the System Controller }
+Biometric Analysis
+Variables:
+* float heartRateThresholdLow; The lower safety limit for heart rate derived from the member's individualized health profile.
+* float heartRateThresholdHigh; The upper safety limit for heart rate derived from the member's individualized health profile.
+* HealthProfile currentProfile; The active member's stored biometric data and medical history flags retrieved from the Data Store.
+Methods:
+* public BiometricStatus evaluateHeartRate(float currentHeartRate, HealthProfile profile) { assesses live heart rate readings against stored personal thresholds }
+* public void triggerAlert(BiometricStatus, MemberID, ZoneID) { issues a Warning Alert to the System Controller when biometric abnormalities are detected }
+Occupancy Manager
+Variables:
+* Map<ZoneID, Integer> zoneOccupancyCounts; The real-time tally of patrons within each exercise zone based on wristband telemetry.
+* Map<ZoneID, Integer> zoneOccupancyThresholds; The defined safety and comfort capacity limits for each gym zone.
+Methods:
+* public void updateLocationDensity(MemberID, ZoneID) { updates the system's internal tracking of patron distribution based on location signals }
+* public void verifyThreshold(ZoneID) { evaluates current zone occupancy against the maximum allowable density }
+* public void triggerAlert(ZoneID) { notifies the System Controller of overcrowding events requiring management }
+System Controller
+Variables:
+* List<Alert> activeAlerts; A collection of all live, pending alerts requiring attention from facility staff or patrons.
+Methods:
+* public void receiveAlertTrigger(Event) { acts as the primary sink for alert triggers from specialized monitoring modules }
+* public void dispatchAlert(Alert) { routes formatted alert notifications to the Device Driver for hardware distribution }
+* public void logSystemEvent(Event) { forwards real-time event data to the Database Controller for archival and reporting }
+Database Controller
+Variables:
+* Connection dataStoreConnection; An active database session with the system's centralized historical Data Store.
+Methods:
+* public void logWeightLifting(EquipmentData) { performs transactions to store repetition and resistance data from smart machines }
+* public void logBioOccupancy(BiometricData, OccupancyData) { logs continuous wristband telemetry and zone density snapshots }
+* public void logAlerts(Alert) { archives resolved system alerts to build historical safety datasets }
+* public Data handleReportQuery(QueryRequest) { retrieves specific data subsets requested by the Usage Report Generator }
+Device Driver
+Variables:
+* Map<DeviceID, Connection> activeStaffTablets; Manages connections to the hardware hosting the staff dashboard interfaces.
+* Map<MemberID, Connection> activeWristbands; Manages connections to specific member-issued wearable screens.
+
+
+Methods:
+* public void pushToTablet(Alert) { translates software alerts into visual and auditory commands for the staff tablets }
+* public void pushToWristband(MemberID, Warning) { triggers localized haptic feedback and text warnings on a specific patron's wearable }
+4   Sample Use Cases
+In the following section, 5 different use cases for the gym are provided. Each use case has an actor, causes input events, and demonstrates possible scenarios for a member.
+
+
+Fall Detection
+This use case describes the high-priority detection of a member falling and the subsequent generation of a critical alert for staff.
+Primary Actor: Member
+Goal: To identify a fall incident and ensure immediate staff intervention.
+Preconditions: The member has an active session and is in a zone monitored by cameras.
+Trigger: The member collapses or falls, and the system's vision logic detects the change in their physical state.
+Scenario:
+1. The Member falls down in a monitored zone of the gym.
+2. The Ceiling Camera streams the video feed to the D Driver, which sends the data through the Sensor Interface.
+3. The MLLM Processor analyzes the video frames and identifies a fall.
+4. The Fall Detection module receives the mllmTextOutput and executes analyzeMLLMOutput() to validate the event against the fallConfidence threshold.
+5. The Fall Detection Monitor calls triggerAlert(), passing the event and ZoneID to the System Controller (Alert Manager).
+6. The System Controller executes dispatchAlert(Alert), sending the formatted notification to the Device Driver. 
+7. The Device Driver executes pushToTablet(Alert), translating the software alert into visual and auditory commands for the Staff Tablets with the member’s identity and location.
+8. Staff mark the incident as resolved on their tablet via the Device Driver, which signals the System Controller to log the resolution to the Data Store.
+Abnormal Heart Rate Detection
+This use case describes monitoring a member's heart rate against their specific health profile and alerting both the member and staff of abnormalities.
+Primary Actor: Member
+Goal: To detect potential medical distress based on individualized health thresholds.
+Preconditions: The member has an active gym session and is wearing a functioning, gym-issued wristband.
+Trigger: A member's heart rate signal exceeds or falls below safe thresholds defined in their stored health profile.
+Scenario:
+1. The Wristband S Driver captures the heart rate signal and sends it to the Wristband Interface via the Sensor Interface.
+2. The Sensor Interface executes normalizeSignal() to standardized events for the Biometric Analysis pipeline. 
+3. Biometric Analysis (Biometric Monitor) calls evaluateHeartRate(), comparing the signal against the memberProfile thresholds retrieved from the Data Store.
+4. If abnormal, Biometric Analysis calls triggerAlert(), sending a Warning Alert to the System Controller. 
+5. The System Controller executes dispatchAlert(), prompting the Device Driver to act.
+6. Simultaneously, the Device Driver executes pushToWristband(MemberID, Warning) to trigger haptic feedback on the Wristband Screen and pushToTablet(Alert) for staff notification.
+Overcrowding Detection
+This use case describes monitoring gym zone occupancy and notifying staff when capacity limits are approached.
+Primary Actor: Member
+Goal: To maintain a safe and organized gym environment in accordance with facility occupancy limits.
+Preconditions: Video monitoring and wristband location tracking are active in the affected zones.
+Trigger: The member enters a zone, or stays in a zone, where the patron count reaches the defined capacity limit.
+Scenario:
+1. The Occupancy Manager updates zoneOccupancyCounts by executing updateLocationDensity(MemberID, ZoneID) based on location signals from the Sensor Interface. 
+2. Simultaneously, the Occupancy Manager tracks location density using real-time signals from the Wristband Interface.
+3. The Occupancy Detection Manager compares these counts against stored zoneOccupancyThresholds.
+4. When thresholds are reached, the Occupancy Manager notifies the System Controller to issue an alert.
+5. The System Controller updates the Dashboard Manager, executing dispatchAlert(), sending the data to the Device Driver.
+6. The Device Driver executes pushToTablet(Alert), refreshing the Staff Tablets with the updated overcrowding notification.
+
+
+Member-to-Member Conflict
+This use case describes the detection of aggressive interactions between patrons and the resulting staff alert.
+Primary Actor: Member
+Goal: To preserve patron safety and facility order by identifying physical altercations.
+Preconditions: Video monitoring is active across shared gym spaces, and the gym member is working out in an area of the gym.
+Trigger: Two or more patrons in the gym begin an altercation of some sort or begin to give signs that an altercation with another patron is possible.
+Scenario:
+1. The D Driver sends the continuous video feed through the Sensor Interface to the MLLM Processor.
+2. The MLLM Processor identifies aggressive behavior and outputs a detection event.
+3. The Conflict Detection component monitors this output and determines if the event constitutes a conflict.
+4. Conflict Detection signals the System Controller to generate a Critical Alert.
+5. The Management Dashboard refreshes the alert panel, providing staff with the location and description of the event.
+Equipment Usage Reporting
+This use case describes the long-term collection and aggregation of equipment data into management reports.
+Primary Actor: Member
+Goal: To have their exercise data accurately logged for long-term progress tracking
+Preconditions: Member arrived at the gym and is ready to work out
+Trigger: The member taps their wristband against the machine's reader to begin a set.
+Scenario:
+1. The Machine Reader S Driver sends the tap-in signal to the Wristband Interface.
+2. The Database Controller receives EquipmentData and executes logWeightLifting(EquipmentData) to record reps and resistance in the Data Store.
+3. The Machine Sensors capture reps and weight data, passing them through the Sensor Interface to the Equipment Manager.
+4. On a scheduled basis, the MLLM (Usage Report Generator) requests data subsets for a specific ReportSchedule.
+5. The Database Controller executes handleReportQuery(QueryRequest) to retrieve the historical equipment usage and activity patterns.
+6. The MLLM (Usage Report Generator) compiles the Generated Usage Report and sends it to the Management Dashboard
+5   Design Constraints
+The following constraints define the technical boundaries and performance requirements for the GSM software architecture. These limits govern how the system processes data and maintains operational integrity during infrastructure failures.
+
+Legal and Regulatory Constraints
+* Privacy and Consent: The system only processes data for members who have provided explicit, documented consent via the facility's membership agreement.
+* Health Data Compliance (HIPAA): Storage and transmission of biometric data must adhere to HIPAA-standard protocols for encryption and access control.
+* Biometric Data Retention: The software must execute periodic deletion protocols to remove non-essential biometric records in compliance with state regulations.
+* Privacy-Exclusion Zones: No video or sensor coverage is permitted in restrooms, changing areas, or locker rooms.
+Operational and Technical Constraints
+* Machine-Only Scope: The system is physically limited to monitoring "Smart Strength" machines; it cannot track activity involving free weights or non-digital accessories.
+* Camera Field of View: Monitoring accuracy is constrained by the physical line-of-sight; the system cannot analyze behavior in "blind spots" created by large machines or structural pillars.
+* Network Connectivity Dependency: Real-time MLLM-based video analysis requires a stable internet connection; during outages, the system is limited to local data logging.
+* Wristband Functionality: Identification and health monitoring are fully dependent on the wristband; a loss of battery charge results in the immediate loss of monitoring data for that patron.
+AI and LLM "Black Box" Constraints
+* API Availability: Real-time analysis depends on the uptime and service-level agreements of third-party AI providers.
+* Processing Latency: System response time is constrained by the "round-trip" inference time required to transmit data to the cloud and receive a processed response.
+* Output Non-Determinism: Because the MLLM may describe identical actions using different terms, the internal logic must be designed to handle variability in text-based outputs.
+________________
+6   Definition of Terms
+The following terms are utilized within the GSM Software Architecture Design to describe the components, signals, and states of the system:
+   * Biometric Monitor: The component responsible for comparing real-time heart rate signals against stored health profile thresholds to determine biometric status.
+   * Critical Alert: A high-priority notification indicating a condition requiring immediate staff intervention, such as a confirmed fall.
+   * Dashboard Manager: The software component that manages the staff-facing monitoring interface, displaying active alerts, occupancy counts, and member locations.
+   * Fall Detection Monitor: The processing component that analyzes the MLLM-provided video feed output to identify and validate fall events.
+   * GSM: Gym Space Monitoring system—the automated monitoring and reporting architecture defined in this document.
+   * MLLM (Multimodal Large Language Model): An external AI service used to analyze video feeds and provide structured text descriptions of safety or occupancy events.
+   * Observational Pipeline: The data collection sequence that logs historical session data, occupancy snapshots, and equipment usage for management reporting.
+   * S Driver (Sensor Driver): A low-level component responsible for communicating with physical sensing hardware and filtering raw signals.
+   * Sensor Interface: The abstraction layer that normalizes signals from all input devices into standardized system events.
+   * Session: The period from when a member registers at the entrance to when their session is closed upon departure.
+   * Smart Strength Machine: Digitally-enabled exercise equipment equipped with sensors for tracking resistance, repetitions, and usage state.
+   * System Controller: The central coordinator that manages the system's state machine, processes alerts, and dispatches commands to subsystems.
+   * Tap-In: The action of associating a member's wristband with a smart machine to begin an exercise set.
+   * Tap-Out: The action of disassociating a member's wristband from a machine upon completion of use.
+   * Warning Alert: A mid-priority alert indicating a condition that staff should investigate, such as an abnormal heart rate.
+   * Wristband: A gym-issued wearable device that transmits biometric and location data and supports NFC functionality.
+
+
+________________
+
+
+
+
+7   Implemented Components
+The following components will be implemented for the demo: Sensor Interface, Sensor Drivers, Device Driver, MLLM Video Processor, Conflict Detection, Fall Detection, Occupancy Manager, System Controller, Database Controller, Data Store, and MLLM Usage Report Generator.
+
+
+Each demo use case and the components it exercises are listed below:
+
+
+Fall Detection: 
+Simulated video input → D Driver → Sensor Interface → MLLM Processor → Fall Detection → System Controller → Device Driver → Staff Tablet
+Abnormal Heart Rate: 
+Simulated wristband feed → S Driver → Sensor Interface → Biometric Analysis → System Controller → Device Driver → Staff Tablet and Wristband Screen
+Overcrowding Detection: 
+Simulated wristband location feed → S Driver → Sensor Interface → Occupancy Manager → System Controller → Device Driver → Staff Tablet
+Member-to-Member Conflict: 
+Simulated video input → D Driver → Sensor Interface → MLLM Processor → Conflict Detection → System Controller → Device Driver → Staff Tablet
+Equipment Usage Reporting: 
+Simulated tap-in feed → S Driver → Sensor Interface → Database Controller → Data Store → MLLM Usage Report Generator → Management Dashboard
+Hardware inputs will be replaced by simulation scripts for the demo. These scripts inject data through the Sensor Interface, the correct architectural entry point, and do not alter any other component interactions.
+By April 25, the Data Store, Database Controller, System Controller, and Staff Tablet interface will be implemented, establishing the core data and alerting infrastructure.
+By May 2, the Occupancy Manager and Management Dashboard will be added, enabling zone tracking and report display.
+By May 7, Fall Detection and Conflict Detection will be completed, finalizing the MLLM-based video analysis pipeline.
