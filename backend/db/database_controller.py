@@ -194,3 +194,61 @@ class DatabaseController:
                 }
 
             raise ValueError(f"Unknown report_type: {query.report_type!r}")
+
+    def get_full_state(self) -> dict:
+        """Return a snapshot of all tables for the demos database viewer."""
+        from backend.db.models import AlertLog, BiometricSnapshot, EquipmentUsage, Member, OccupancySnapshot
+        with self._session() as session:
+            members = [
+                {"id": r.id, "name": r.name, "age": r.age, "activity_level": r.activity_level,
+                 "hr_low": r.heart_rate_threshold_low, "hr_high": r.heart_rate_threshold_high}
+                for r in session.query(Member).all()
+            ]
+            alerts = [
+                {"alert_id": r.alert_id, "severity": r.severity, "zone_id": r.zone_id,
+                 "description": r.description, "member_id": r.member_id,
+                 "resolved": r.resolved, "created_at": r.created_at.isoformat() if r.created_at else None}
+                for r in session.query(AlertLog).order_by(AlertLog.created_at.desc()).limit(20).all()
+            ]
+            equipment = [
+                {"member_id": r.member_id, "machine_id": r.machine_id, "zone_id": r.zone_id,
+                 "reps": r.reps, "resistance": r.resistance,
+                 "started_at": r.started_at.isoformat() if r.started_at else None}
+                for r in session.query(EquipmentUsage).order_by(EquipmentUsage.started_at.desc()).limit(20).all()
+            ]
+            biometric = [
+                {"member_id": r.member_id, "heart_rate": r.heart_rate, "spo2": r.spo2,
+                 "zone_id": r.zone_id,
+                 "timestamp": r.timestamp.isoformat() if r.timestamp else None}
+                for r in session.query(BiometricSnapshot).order_by(BiometricSnapshot.timestamp.desc()).limit(20).all()
+            ]
+            occupancy = [
+                {"zone_id": r.zone_id, "count": r.count,
+                 "timestamp": r.timestamp.isoformat() if r.timestamp else None}
+                for r in session.query(OccupancySnapshot).order_by(OccupancySnapshot.timestamp.desc()).limit(20).all()
+            ]
+        return {
+            "members": members,
+            "alert_logs": alerts,
+            "equipment_usage": equipment,
+            "biometric_snapshots": biometric,
+            "occupancy_snapshots": occupancy,
+        }
+
+    def seed_members(self) -> None:
+        """Insert demo seed members if not already present."""
+        from backend.db.models import Member
+        SEED = [
+            {"id": "member_001", "name": "Alice Johnson", "age": 32, "bmi": 22.5,
+             "activity_level": "moderate", "heart_rate_threshold_low": 55.0, "heart_rate_threshold_high": 165.0},
+            {"id": "member_002", "name": "Bob Smith", "age": 45, "bmi": 27.8,
+             "activity_level": "low", "heart_rate_threshold_low": 50.0, "heart_rate_threshold_high": 140.0},
+            {"id": "member_003", "name": "Carol Davis", "age": 28, "bmi": 21.1,
+             "activity_level": "high", "heart_rate_threshold_low": 60.0, "heart_rate_threshold_high": 185.0},
+        ]
+        with self._session() as session:
+            for m in SEED:
+                if not session.query(Member).filter_by(id=m["id"]).first():
+                    session.add(Member(**m))
+            session.commit()
+        logger.info("Seed members ensured.")

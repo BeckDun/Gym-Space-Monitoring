@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
-DATABASE_URL: str = os.environ.get("DATABASE_URL", "postgresql://postgres:password@localhost:5432/gsm")
+DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///./gsm.db")
+USE_MOCK_MLLM: bool = os.environ.get("USE_MOCK_MLLM", "0") == "1" or not GEMINI_API_KEY
 
 ZONE_THRESHOLDS: dict[str, int] = {
     "zone_a": 30,

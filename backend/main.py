@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 import logging
 import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.controller.system_controller import SystemController
 from backend.db.database_controller import DatabaseController
@@ -23,6 +26,7 @@ system_controller = SystemController(device_driver=device_driver, database_contr
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
+    db.seed_members()
     logger.info("GSM backend started.")
     yield
     logger.info("GSM backend shutting down.")
@@ -37,6 +41,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Page routes (served before static mount) ─────────────────────────────────
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse("/demos")
+
+
+@app.get("/demos", include_in_schema=False)
+def demos_page():
+    return FileResponse("frontend/demos/index.html")
+
+
+@app.get("/staff", include_in_schema=False)
+def staff_page():
+    return FileResponse("frontend/staff_tablet/index.html")
+
+
+@app.get("/management", include_in_schema=False)
+def management_page():
+    return FileResponse("frontend/management_dashboard/index.html")
+
+
+# ── Core API ──────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 def health():
@@ -57,6 +84,61 @@ def resolve_alert(alert_id: str):
     return {"success": True, "alert_id": alert_id}
 
 
+@app.get("/api/report/{schedule}")
+def get_report(schedule: str):
+    from backend.reporting.usage_report_generator import UsageReportGenerator
+    gen = UsageReportGenerator(database_controller=db)
+    try:
+        return gen.generate(schedule)
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+# ── Demos API ─────────────────────────────────────────────────────────────────
+
+@app.get("/api/demos/stream/{demo_name}", include_in_schema=False)
+async def stream_demo(demo_name: str):
+    """SSE endpoint — streams step-by-step log entries for the demos page."""
+    from backend.demos import demo_runner
+
+    async def event_generator():
+        async for entry in demo_runner.run(demo_name):
+            yield f"data: {json.dumps(entry)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/api/demos/db-state")
+def demo_db_state():
+    """Return a full snapshot of the database for the demos page viewer."""
+    return db.get_full_state()
+
+
+@app.post("/api/demos/reset")
+def reset_demo_db():
+    """Wipe all demo data and re-seed members."""
+    from backend.db.models import AlertLog, BiometricSnapshot, EquipmentUsage, OccupancySnapshot
+    with db._session() as session:
+        session.query(AlertLog).delete()
+        session.query(BiometricSnapshot).delete()
+        session.query(EquipmentUsage).delete()
+        session.query(OccupancySnapshot).delete()
+        session.commit()
+    # Clear in-memory active alerts
+    system_controller.active_alerts.clear()
+    db.seed_members()
+    return {"success": True, "message": "Database reset and re-seeded."}
+
+
+# ── WebSockets ────────────────────────────────────────────────────────────────
+
 @app.websocket("/ws/alerts")
 async def websocket_alerts(websocket: WebSocket):
     """Staff tablet subscribes here to receive real-time alert pushes."""
@@ -65,14 +147,12 @@ async def websocket_alerts(websocket: WebSocket):
     device_driver.register_tablet(device_id, websocket)
     logger.info("Staff tablet connected: %s", device_id)
 
-    # Send current active alerts on connect
     for alert_dict in system_controller.get_active_alerts():
-        import json
         await websocket.send_text(json.dumps(alert_dict))
 
     try:
         while True:
-            await websocket.receive_text()  # keep connection alive; tablet sends ack pings
+            await websocket.receive_text()
     except WebSocketDisconnect:
         device_driver.unregister_tablet(device_id)
         logger.info("Staff tablet disconnected: %s", device_id)
@@ -90,3 +170,9 @@ async def websocket_wristband(websocket: WebSocket, member_id: str):
     except WebSocketDisconnect:
         device_driver.unregister_wristband(member_id)
         logger.info("Wristband disconnected: member %s", member_id)
+
+
+# ── Static files (must come after all API/page routes) ───────────────────────
+
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/video", StaticFiles(directory="."), name="video_files")

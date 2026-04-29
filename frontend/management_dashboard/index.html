@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GSM — Management Dashboard</title>
+  <link rel="stylesheet" href="/static/management_dashboard/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <span class="logo">GSM</span>
+      <span class="header-title">Management Dashboard</span>
+      <nav>
+        <a href="/demos">Demos</a>
+        <a href="/staff">Staff Tablet</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Controls -->
+    <div class="controls-bar">
+      <label>Report Period:
+        <select id="schedule-select">
+          <option value="hourly">Hourly</option>
+          <option value="daily" selected>Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </label>
+      <button id="btn-generate" class="btn-primary">Generate Report</button>
+      <span id="report-ts" class="report-ts"></span>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-cards" id="summary-cards">
+      <div class="summary-card">
+        <div class="card-label">Equipment Sessions</div>
+        <div class="card-value" id="stat-sessions">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">Peak Occupancy</div>
+        <div class="card-value" id="stat-peak">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">Avg Occupancy</div>
+        <div class="card-value" id="stat-avg">—</div>
+      </div>
+      <div class="summary-card critical">
+        <div class="card-label">Critical Alerts</div>
+        <div class="card-value" id="stat-critical">—</div>
+      </div>
+      <div class="summary-card warning">
+        <div class="card-label">Warning Alerts</div>
+        <div class="card-value" id="stat-warnings">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">Unresolved</div>
+        <div class="card-value" id="stat-unresolved">—</div>
+      </div>
+    </div>
+
+    <!-- Tables row -->
+    <div class="tables-row">
+      <!-- Equipment ranking -->
+      <div class="panel">
+        <div class="panel-header">Equipment Usage Ranking</div>
+        <div class="table-wrap" id="equipment-table">
+          <div class="empty">Run a report to see data.</div>
+        </div>
+      </div>
+
+      <!-- Zone breakdown -->
+      <div class="panel">
+        <div class="panel-header">Zone Occupancy Breakdown</div>
+        <div class="table-wrap" id="zone-table">
+          <div class="empty">Run a report to see data.</div>
+        </div>
+      </div>
+
+      <!-- Alert breakdown -->
+      <div class="panel">
+        <div class="panel-header">Alert History</div>
+        <div class="table-wrap" id="alert-table">
+          <div class="empty">Run a report to see data.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/management_dashboard/app.js"></script>
+</body>
+</html>
