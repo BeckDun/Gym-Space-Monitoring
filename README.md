@@ -53,6 +53,10 @@ Event-driven, two pipelines:
 
 ## Setup
 
+### Brew Installs
+```bash
+brew install postgresql
+```
 ### Backend
 ```bash
 python -m venv .venv && source .venv/bin/activate
