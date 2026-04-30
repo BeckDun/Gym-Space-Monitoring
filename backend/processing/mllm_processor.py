@@ -5,7 +5,7 @@ import logging
 from google import genai
 from google.genai import types
 
-from backend.config import GEMINI_API_KEY, MLLM_MODEL
+from backend.config import GEMINI_API_KEY, MLLM_MODEL, USE_MOCK_MLLM
 from backend.sensor.sensor_interface import Event
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,14 @@ class MLLMProcessor:
             len(video_bytes) / 1_048_576,
             event.zone_id,
         )
+
+        if USE_MOCK_MLLM:
+            logger.info("[MOCK] Returning simulated MLLM response for zone=%s", event.zone_id)
+            if "fall" in prompt.lower():
+                result = "Fall: 8, Confidence: 9"
+            else:
+                result = "Conflict: 7, Confidence: 8"
+            return result
 
         response = self.client.models.generate_content(
             model=MLLM_MODEL,
