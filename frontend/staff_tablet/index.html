@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GSM — Staff Tablet</title>
+  <link rel="stylesheet" href="/static/staff_tablet/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <span class="logo">GSM</span>
+      <span class="header-title">Staff Tablet</span>
+      <div id="ws-status" class="ws-status">Connecting...</div>
+      <nav>
+        <a href="/demos">Demos</a>
+        <a href="/management">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Alert feed -->
+    <div class="alerts-col">
+      <div class="col-header">
+        <span>Active Alerts</span>
+        <span id="alert-count" class="badge-count">0</span>
+      </div>
+      <div id="alert-list" class="alert-list">
+        <div class="empty-state">No active alerts.</div>
+      </div>
+    </div>
+
+    <!-- Zone occupancy -->
+    <div class="zones-col">
+      <div class="col-header">Zone Occupancy</div>
+      <div class="zone-grid" id="zone-grid">
+        <div class="zone-card" data-zone="zone_a">
+          <div class="zone-name">Zone A</div>
+          <div class="zone-count">—</div>
+          <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
+          <div class="zone-cap">Capacity: 30</div>
+        </div>
+        <div class="zone-card" data-zone="zone_b">
+          <div class="zone-name">Zone B</div>
+          <div class="zone-count">—</div>
+          <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
+          <div class="zone-cap">Capacity: 25</div>
+        </div>
+        <div class="zone-card" data-zone="zone_c">
+          <div class="zone-name">Zone C</div>
+          <div class="zone-count">—</div>
+          <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
+          <div class="zone-cap">Capacity: 20</div>
+        </div>
+        <div class="zone-card" data-zone="zone_d">
+          <div class="zone-name">Zone D</div>
+          <div class="zone-count">—</div>
+          <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
+          <div class="zone-cap">Capacity: 20</div>
+        </div>
+      </div>
+
+      <div class="col-header" style="margin-top:16px;">Recent DB Alerts</div>
+      <div id="db-alerts" class="db-alerts"></div>
+    </div>
+  </div>
+
+  <script src="/static/staff_tablet/app.js"></script>
+</body>
+</html>

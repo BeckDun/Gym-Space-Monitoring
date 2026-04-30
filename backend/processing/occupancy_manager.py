@@ -28,7 +28,11 @@ class OccupancyManager:
         """Update internal tracking of patron distribution from location signals."""
         previous_zone = self._member_locations.get(member_id)
 
-        if previous_zone and previous_zone != zone_id:
+        if previous_zone == zone_id:
+            # Member is already tracked in this zone; wristband re-sent same location
+            return
+
+        if previous_zone:
             self.zone_occupancy_counts[previous_zone] = max(
                 0, self.zone_occupancy_counts.get(previous_zone, 0) - 1
             )
