@@ -55,6 +55,7 @@ Event-driven, two pipelines:
 
 ### Brew Installs
 ```bash
+which brew && brew info postgresql
 brew install postgresql
 ```
 ### Backend
@@ -66,15 +67,15 @@ uvicorn backend.main:app --reload
 ```
 
 ### Frontend
-Open `frontend/staff_tablet/index.html` or `frontend/management_dashboard/index.html` in a browser.
+Open `http://127.0.0.1:8000/staff` or `http://127.0.0.1:8000/static/management_dashboard/index.html` or `http://127.0.0.1:8000/demos`in a browser.
 
 ### Run Demos
 ```bash
-python demos/fall_detection_demo.py
-python demos/abnormal_heart_rate_demo.py
-python demos/overcrowding_demo.py
-python demos/conflict_detection_demo.py
-python demos/equipment_usage_demo.py
+python3 -m demos.fall_detection_demo
+python3 -m demos.abnormal_heart_rate_demo
+python3 -m demos.overcrowding_demo
+python3 -m demos.conflict_detection_demo
+python3 -m demos.equipment_usage_demo
 ```
 
 ---
