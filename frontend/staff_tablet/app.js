@@ -1,6 +1,6 @@
 'use strict';
 
-const ZONE_CAPS = { zone_a: 30, zone_b: 25, zone_c: 20, zone_d: 20 };
+const ZONE_CAPS = { cardio_zone: 30, smart_machine_zone: 25, cycling_zone: 20, functional_zone: 20 };
 const alertList  = document.getElementById('alert-list');
 const alertCount = document.getElementById('alert-count');
 const wsStatus   = document.getElementById('ws-status');

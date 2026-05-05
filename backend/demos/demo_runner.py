@@ -64,7 +64,7 @@ def _use_mock() -> bool:
 async def run_fall_detection() -> AsyncIterator[dict]:
     db, dd, ctrl = _init_components()
     video_path = "Man_Falling_in_Gym_Video.mp4"
-    zone_id = "zone_a"
+    zone_id = "cardio_zone"
     mock = _use_mock()
 
     from backend.sensor.sensor_driver import CameraDriver
@@ -133,7 +133,7 @@ async def run_fall_detection() -> AsyncIterator[dict]:
 
 async def run_heart_rate() -> AsyncIterator[dict]:
     db, dd, ctrl = _init_components()
-    zone_id = "zone_b"
+    zone_id = "smart_machine_zone"
     member_id = "member_002"  # Bob: threshold 50–140 bpm
     abnormal_hr = 175.0
 
@@ -195,7 +195,7 @@ async def run_heart_rate() -> AsyncIterator[dict]:
 
 async def run_overcrowding() -> AsyncIterator[dict]:
     db, dd, ctrl = _init_components()
-    zone_id = "zone_a"
+    zone_id = "cardio_zone"
     threshold = 5  # demo threshold — low so it triggers quickly
     num_members = 7
 
@@ -206,7 +206,7 @@ async def run_overcrowding() -> AsyncIterator[dict]:
 
     # Override threshold for demo
     from unittest.mock import patch
-    with patch("backend.processing.occupancy_manager.ZONE_THRESHOLDS", {zone_id: threshold, "zone_b": 10}):
+    with patch("backend.processing.occupancy_manager.ZONE_THRESHOLDS", {zone_id: threshold, "smart_machine_zone": 10}):
         from backend.processing.occupancy_manager import OccupancyManager as OM
         occupancy_manager = OM(system_controller=ctrl)
 
@@ -264,7 +264,7 @@ async def run_overcrowding() -> AsyncIterator[dict]:
 async def run_conflict_detection() -> AsyncIterator[dict]:
     db, dd, ctrl = _init_components()
     video_path = "Man_Falling_in_Gym_Video.mp4"
-    zone_id = "zone_a"
+    zone_id = "cardio_zone"
     mock = _use_mock()
 
     from backend.sensor.sensor_driver import CameraDriver
@@ -331,7 +331,7 @@ async def run_conflict_detection() -> AsyncIterator[dict]:
 
 async def run_equipment_usage() -> AsyncIterator[dict]:
     db, dd, ctrl = _init_components()
-    zone_id = "zone_b"
+    zone_id = "smart_machine_zone"
     member_id = "member_001"
 
     from backend.sensor.sensor_driver import EquipmentDriver

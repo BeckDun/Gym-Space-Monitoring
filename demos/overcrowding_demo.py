@@ -19,7 +19,7 @@ from backend.sensor.device_driver import DeviceDriver
 from backend.sensor.sensor_driver import WristbandDriver
 from backend.sensor.sensor_interface import SensorInterface
 
-ZONE_ID = "zone_a"  # threshold = 30 (from config)
+ZONE_ID = "cardio_zone"  # threshold = 30 (from config)
 
 
 def main() -> None:
@@ -33,7 +33,7 @@ def main() -> None:
     print("\n=== Overcrowding Detection Demo ===\n")
     print(f"Zone threshold for {ZONE_ID}: {occupancy_manager.zone_occupancy_thresholds.get(ZONE_ID)} patrons\n")
 
-    # Simulate 35 members entering zone_a (threshold is 30)
+    # Simulate 35 members entering cardio_zone (threshold is 30)
     for i in range(35):
         member_id = f"member_{i:03d}"
         driver = WristbandDriver(member_id=member_id, zone_id=ZONE_ID)

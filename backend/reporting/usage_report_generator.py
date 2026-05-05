@@ -67,21 +67,21 @@ class UsageReportGenerator:
 
     def _summarize_occupancy(self, records: list[dict]) -> dict:
         if not records:
-            return {"peak_count": 0, "average_count": 0, "zone_breakdown": {}}
+            return {"peak_count": 0, "average_count": 0, "smart_machine_zonereakdown": {}}
 
-        zone_counts: defaultdict = defaultdict(list)
+        cycling_zoneounts: defaultdict = defaultdict(list)
         for r in records:
-            zone_counts[r["zone_id"]].append(r["count"])
+            cycling_zoneounts[r["zone_id"]].append(r["count"])
 
-        zone_breakdown = {
+        smart_machine_zonereakdown = {
             zone: {"peak": max(counts), "average": round(sum(counts) / len(counts), 1)}
-            for zone, counts in zone_counts.items()
+            for zone, counts in cycling_zoneounts.items()
         }
         all_counts = [r["count"] for r in records]
         return {
             "peak_count": max(all_counts),
             "average_count": round(sum(all_counts) / len(all_counts), 1),
-            "zone_breakdown": zone_breakdown,
+            "smart_machine_zonereakdown": smart_machine_zonereakdown,
         }
 
     def _summarize_alerts(self, records: list[dict]) -> dict:

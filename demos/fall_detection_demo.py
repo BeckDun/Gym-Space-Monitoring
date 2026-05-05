@@ -23,7 +23,7 @@ from backend.sensor.sensor_driver import CameraDriver
 from backend.sensor.sensor_interface import SensorInterface
 
 VIDEO_PATH = "Man_Falling_in_Gym_Video.mp4"
-ZONE_ID = "zone_a"
+ZONE_ID = "cardio_zone"
 
 
 def main() -> None:

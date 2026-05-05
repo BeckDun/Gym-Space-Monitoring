@@ -67,27 +67,27 @@ class TestTriggerAlert:
     def test_warning_status_calls_controller(self):
         ctrl = _controller()
         ba = BiometricAnalysis(ctrl)
-        ba.trigger_alert(BiometricStatus.WARNING, "m1", "zone_a", current_heart_rate=185.0)
+        ba.trigger_alert(BiometricStatus.WARNING, "m1", "cardio_zone", current_heart_rate=185.0)
         ctrl.receive_alert_trigger.assert_called_once()
 
     def test_normal_status_does_not_call_controller(self):
         ctrl = _controller()
         ba = BiometricAnalysis(ctrl)
-        ba.trigger_alert(BiometricStatus.NORMAL, "m1", "zone_a")
+        ba.trigger_alert(BiometricStatus.NORMAL, "m1", "cardio_zone")
         ctrl.receive_alert_trigger.assert_not_called()
 
     def test_alert_event_contains_member_id(self):
         ctrl = _controller()
         ba = BiometricAnalysis(ctrl)
-        ba.trigger_alert(BiometricStatus.WARNING, "m42", "zone_b", 200.0)
+        ba.trigger_alert(BiometricStatus.WARNING, "m42", "smart_machine_zone", 200.0)
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.member_id == "m42"
-        assert event.zone_id == "zone_b"
+        assert event.zone_id == "smart_machine_zone"
 
     def test_alert_payload_severity_is_warning(self):
         ctrl = _controller()
         ba = BiometricAnalysis(ctrl)
-        ba.trigger_alert(BiometricStatus.WARNING, "m1", "zone_a", 50.0)
+        ba.trigger_alert(BiometricStatus.WARNING, "m1", "cardio_zone", 50.0)
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "WARNING"
 
@@ -99,7 +99,7 @@ class TestProcessEvent:
         event = Event(
             type="biometric",
             payload={"heart_rate": 200.0},
-            zone_id="zone_a",
+            zone_id="cardio_zone",
             member_id="m1",
             timestamp=datetime.utcnow(),
         )
@@ -112,7 +112,7 @@ class TestProcessEvent:
         event = Event(
             type="biometric",
             payload={"heart_rate": 100.0},
-            zone_id="zone_a",
+            zone_id="cardio_zone",
             member_id="m1",
             timestamp=datetime.utcnow(),
         )
@@ -122,6 +122,6 @@ class TestProcessEvent:
     def test_process_event_no_heart_rate_key_is_no_op(self):
         ctrl = _controller()
         ba = BiometricAnalysis(ctrl)
-        event = Event(type="biometric", payload={}, zone_id="zone_a", member_id="m1", timestamp=datetime.utcnow())
+        event = Event(type="biometric", payload={}, zone_id="cardio_zone", member_id="m1", timestamp=datetime.utcnow())
         ba.process_event(event, _profile())
         ctrl.receive_alert_trigger.assert_not_called()

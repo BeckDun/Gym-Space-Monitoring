@@ -35,7 +35,7 @@ function renderReport(report) {
   document.getElementById('stat-unresolved').textContent = al.unresolved ?? '0';
 
   renderEquipmentTable(eq.usage_ranking || []);
-  renderZoneTable(occ.zone_breakdown || {});
+  renderZoneTable(occ.smart_machine_zonereakdown || {});
   renderAlertTable(al);
 }
 

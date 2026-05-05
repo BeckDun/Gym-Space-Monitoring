@@ -10,7 +10,7 @@ from backend.sensor.device_driver import Alert, DeviceDriver
 from backend.sensor.sensor_interface import Event
 
 
-def _event(severity="CRITICAL", description="Test alert", zone="zone_a", member=None, type_="alert"):
+def _event(severity="CRITICAL", description="Test alert", zone="cardio_zone", member=None, type_="alert"):
     return Event(
         type=type_,
         payload={"severity": severity, "description": description},
@@ -42,8 +42,8 @@ class TestReceiveAlertTrigger:
 
     def test_alert_zone_id_matches_event(self):
         ctrl, _, _ = _make_controller()
-        ctrl.receive_alert_trigger(_event(zone="zone_b"))
-        assert ctrl.active_alerts[0].zone_id == "zone_b"
+        ctrl.receive_alert_trigger(_event(zone="smart_machine_zone"))
+        assert ctrl.active_alerts[0].zone_id == "smart_machine_zone"
 
     def test_calls_dispatch_alert(self):
         ctrl, device_driver, _ = _make_controller()
@@ -52,9 +52,9 @@ class TestReceiveAlertTrigger:
 
     def test_multiple_alerts_accumulate(self):
         ctrl, _, _ = _make_controller()
-        ctrl.receive_alert_trigger(_event(zone="zone_a"))
-        ctrl.receive_alert_trigger(_event(zone="zone_b"))
-        ctrl.receive_alert_trigger(_event(zone="zone_c"))
+        ctrl.receive_alert_trigger(_event(zone="cardio_zone"))
+        ctrl.receive_alert_trigger(_event(zone="smart_machine_zone"))
+        ctrl.receive_alert_trigger(_event(zone="cycling_zone"))
         assert len(ctrl.active_alerts) == 3
 
 
@@ -63,13 +63,13 @@ class TestDispatchAlert:
 
     def test_pushes_to_tablet(self):
         ctrl, dd, _ = _make_controller()
-        alert = Alert(severity="CRITICAL", zone_id="zone_a", description="Fall detected")
+        alert = Alert(severity="CRITICAL", zone_id="cardio_zone", description="Fall detected")
         ctrl.dispatch_alert(alert)
         dd.push_to_tablet.assert_called_once_with(alert)
 
     def test_heart_rate_warning_also_pushes_to_wristband(self):
         ctrl, dd, _ = _make_controller()
-        alert = Alert(severity="WARNING", zone_id="zone_a", description="Abnormal heart rate detected for member m1", member_id="m1")
+        alert = Alert(severity="WARNING", zone_id="cardio_zone", description="Abnormal heart rate detected for member m1", member_id="m1")
         ctrl.dispatch_alert(alert)
         dd.push_to_tablet.assert_called_once()
         assert dd.push_to_wristband.call_count == 1
@@ -77,13 +77,13 @@ class TestDispatchAlert:
 
     def test_critical_alert_does_not_push_to_wristband(self):
         ctrl, dd, _ = _make_controller()
-        alert = Alert(severity="CRITICAL", zone_id="zone_a", description="Fall detected")
+        alert = Alert(severity="CRITICAL", zone_id="cardio_zone", description="Fall detected")
         ctrl.dispatch_alert(alert)
         dd.push_to_wristband.assert_not_called()
 
     def test_non_heart_rate_warning_no_wristband(self):
         ctrl, dd, _ = _make_controller()
-        alert = Alert(severity="WARNING", zone_id="zone_a", description="Zone overcrowded: 31/30", member_id=None)
+        alert = Alert(severity="WARNING", zone_id="cardio_zone", description="Zone overcrowded: 31/30", member_id=None)
         ctrl.dispatch_alert(alert)
         dd.push_to_wristband.assert_not_called()
 

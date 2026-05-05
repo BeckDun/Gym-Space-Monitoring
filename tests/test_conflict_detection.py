@@ -32,35 +32,35 @@ class TestAnalyzeMLLMOutput:
 
     def test_critical_alert_above_threshold(self):
         cd, ctrl = _make_cd(threshold=6.0)
-        cd.analyze_mllm_output("Conflict: 8, Confidence: 9", "zone_a")
+        cd.analyze_mllm_output("Conflict: 8, Confidence: 9", "cardio_zone")
         ctrl.receive_alert_trigger.assert_called_once()
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "CRITICAL"
 
     def test_warning_alert_between_4_and_threshold(self):
         cd, ctrl = _make_cd(threshold=6.0)
-        cd.analyze_mllm_output("Conflict: 5, Confidence: 5", "zone_a")
+        cd.analyze_mllm_output("Conflict: 5, Confidence: 5", "cardio_zone")
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "WARNING"
 
     def test_no_alert_score_below_4(self):
         cd, ctrl = _make_cd(threshold=6.0)
-        cd.analyze_mllm_output("Conflict: 2, Confidence: 3", "zone_a")
+        cd.analyze_mllm_output("Conflict: 2, Confidence: 3", "cardio_zone")
         ctrl.receive_alert_trigger.assert_not_called()
 
     def test_no_alert_no_parseable_output(self):
         cd, ctrl = _make_cd(threshold=6.0)
-        cd.analyze_mllm_output("People are exercising normally.", "zone_a")
+        cd.analyze_mllm_output("People are exercising normally.", "cardio_zone")
         ctrl.receive_alert_trigger.assert_not_called()
 
     def test_stores_mllm_text_output(self):
         cd, _ = _make_cd()
-        cd.analyze_mllm_output("Conflict: 7, Confidence: 8", "zone_a")
+        cd.analyze_mllm_output("Conflict: 7, Confidence: 8", "cardio_zone")
         assert cd.mllm_text_output == "Conflict: 7, Confidence: 8"
 
     def test_critical_at_exactly_threshold(self):
         cd, ctrl = _make_cd(threshold=6.0)
-        cd.analyze_mllm_output("Conflict: 6, Confidence: 7", "zone_a")
+        cd.analyze_mllm_output("Conflict: 6, Confidence: 7", "cardio_zone")
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "CRITICAL"
 
@@ -71,12 +71,12 @@ class TestTriggerAlert:
     def test_trigger_sends_event_to_controller(self):
         cd, ctrl = _make_cd()
         cd.mllm_text_output = "Conflict: 7, Confidence: 8"
-        cd.trigger_alert("CRITICAL", "zone_b")
+        cd.trigger_alert("CRITICAL", "smart_machine_zone")
         ctrl.receive_alert_trigger.assert_called_once()
 
     def test_trigger_event_type_is_alert(self):
         cd, ctrl = _make_cd()
         cd.mllm_text_output = "Conflict: 7, Confidence: 8"
-        cd.trigger_alert("WARNING", "zone_a")
+        cd.trigger_alert("WARNING", "cardio_zone")
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.type == "alert"

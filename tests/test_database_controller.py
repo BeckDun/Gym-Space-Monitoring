@@ -44,7 +44,7 @@ def seed_member(db):
 class TestLogAlerts:
     def test_log_alert_inserts_row(self, db):
         from backend.sensor.device_driver import Alert
-        alert = Alert(severity="CRITICAL", zone_id="zone_a", description="Test fall", member_id=None)
+        alert = Alert(severity="CRITICAL", zone_id="cardio_zone", description="Test fall", member_id=None)
         db.log_alerts(alert)
 
         from backend.db.models import AlertLog
@@ -56,7 +56,7 @@ class TestLogAlerts:
     def test_log_alert_updates_existing_row(self, db):
         from backend.sensor.device_driver import Alert
         from backend.db.models import AlertLog
-        alert = Alert(severity="WARNING", zone_id="zone_b", description="Overcrowded", member_id=None)
+        alert = Alert(severity="WARNING", zone_id="smart_machine_zone", description="Overcrowded", member_id=None)
         db.log_alerts(alert)
         alert.resolved = True
         db.log_alerts(alert)
@@ -71,7 +71,7 @@ class TestLogWeightLifting:
     def test_log_weight_lifting_inserts_row(self, db, seed_member):
         from backend.db.database_controller import EquipmentData
         from backend.db.models import EquipmentUsage
-        data = EquipmentData(member_id="m1", machine_id="press_01", zone_id="zone_b", reps=12, resistance=60.0)
+        data = EquipmentData(member_id="m1", machine_id="press_01", zone_id="smart_machine_zone", reps=12, resistance=60.0)
         db.log_weight_lifting(data)
 
         with db._session() as session:
@@ -85,13 +85,13 @@ class TestLogBioOccupancy:
     def test_log_bio_occupancy_inserts_two_rows(self, db, seed_member):
         from backend.db.database_controller import BiometricData, OccupancyData
         from backend.db.models import BiometricSnapshot, OccupancySnapshot
-        bio = BiometricData(member_id="m1", heart_rate=78.0, spo2=98.0, zone_id="zone_a")
-        occ = OccupancyData(zone_id="zone_a", count=5)
+        bio = BiometricData(member_id="m1", heart_rate=78.0, spo2=98.0, zone_id="cardio_zone")
+        occ = OccupancyData(zone_id="cardio_zone", count=5)
         db.log_bio_occupancy(bio, occ)
 
         with db._session() as session:
             bio_row = session.query(BiometricSnapshot).filter_by(member_id="m1").first()
-            occ_row = session.query(OccupancySnapshot).filter_by(zone_id="zone_a").first()
+            occ_row = session.query(OccupancySnapshot).filter_by(zone_id="cardio_zone").first()
         assert bio_row.heart_rate == 78.0
         assert occ_row.count == 5
 
@@ -99,7 +99,7 @@ class TestLogBioOccupancy:
 class TestHandleReportQuery:
     def test_equipment_report_returns_records(self, db, seed_member):
         from backend.db.database_controller import EquipmentData, QueryRequest
-        db.log_weight_lifting(EquipmentData(member_id="m1", machine_id="squat_01", zone_id="zone_a", reps=8, resistance=80.0))
+        db.log_weight_lifting(EquipmentData(member_id="m1", machine_id="squat_01", zone_id="cardio_zone", reps=8, resistance=80.0))
         result = db.handle_report_query(QueryRequest(
             report_type="equipment",
             start_time=datetime(2000, 1, 1),
@@ -111,8 +111,8 @@ class TestHandleReportQuery:
     def test_occupancy_report_returns_records(self, db, seed_member):
         from backend.db.database_controller import BiometricData, OccupancyData, QueryRequest
         db.log_bio_occupancy(
-            BiometricData(member_id="m1", heart_rate=90.0, spo2=97.0, zone_id="zone_a"),
-            OccupancyData(zone_id="zone_a", count=10),
+            BiometricData(member_id="m1", heart_rate=90.0, spo2=97.0, zone_id="cardio_zone"),
+            OccupancyData(zone_id="cardio_zone", count=10),
         )
         result = db.handle_report_query(QueryRequest(
             report_type="occupancy",
@@ -125,7 +125,7 @@ class TestHandleReportQuery:
     def test_alerts_report_returns_records(self, db):
         from backend.sensor.device_driver import Alert
         from backend.db.database_controller import QueryRequest
-        alert = Alert(severity="INFO", zone_id="zone_a", description="Test")
+        alert = Alert(severity="INFO", zone_id="cardio_zone", description="Test")
         db.log_alerts(alert)
         result = db.handle_report_query(QueryRequest(
             report_type="alerts",
