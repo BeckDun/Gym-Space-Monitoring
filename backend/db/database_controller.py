@@ -260,3 +260,68 @@ class DatabaseController:
                     session.add(Member(**m))
             session.commit()
         logger.info("Seed members ensured.")
+
+    def add_member(self) -> dict:
+        """Generate and insert a new member with a complete random health profile."""
+        import random
+        from backend.db.models import Member
+
+        FIRST_NAMES = [
+            "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Quinn",
+            "Avery", "Harper", "Logan", "Blake", "Drew", "Sage", "Reese",
+            "Skyler", "Dakota", "Jamie", "Kendall", "Rowan", "Finley",
+            "Cameron", "Emery", "Hayden", "Parker", "Peyton", "Sawyer",
+            "Spencer", "Sydney", "Tatum", "Zion",
+        ]
+        LAST_NAMES = [
+            "Anderson", "Brown", "Chen", "Diaz", "Evans", "Foster", "Garcia",
+            "Hayes", "Inoue", "Jackson", "Kumar", "Lopez", "Miller", "Nguyen",
+            "Ortiz", "Patel", "Quinn", "Rivera", "Santos", "Thompson",
+            "Ueda", "Vargas", "Williams", "Xu", "Young", "Zhang",
+        ]
+        ACTIVITY_LEVELS = ["low", "moderate", "high"]
+
+        with self._session() as session:
+            # Find the next unique member number
+            existing = session.query(Member).all()
+            existing_nums = []
+            for m in existing:
+                try:
+                    existing_nums.append(int(m.id.split("_")[-1]))
+                except (ValueError, IndexError):
+                    pass
+            next_num = max(existing_nums, default=0) + 1
+            member_id = f"member_{next_num:03d}"
+
+            name = f"{random.choice(FIRST_NAMES)} {random.choice(LAST_NAMES)}"
+            age = random.randint(18, 65)
+            bmi = round(random.uniform(18.5, 32.0), 1)
+            activity_level = random.choice(ACTIVITY_LEVELS)
+
+            # Derive HR thresholds from age (max HR ≈ 220 - age)
+            max_hr = 220 - age
+            if activity_level == "high":
+                hr_low = round(max_hr * 0.30, 1)
+                hr_high = round(max_hr * 0.95, 1)
+            elif activity_level == "moderate":
+                hr_low = round(max_hr * 0.28, 1)
+                hr_high = round(max_hr * 0.85, 1)
+            else:  # low
+                hr_low = round(max_hr * 0.25, 1)
+                hr_high = round(max_hr * 0.75, 1)
+
+            member = Member(
+                id=member_id, name=name, age=age, bmi=bmi,
+                activity_level=activity_level,
+                heart_rate_threshold_low=hr_low,
+                heart_rate_threshold_high=hr_high,
+            )
+            session.add(member)
+            session.commit()
+            logger.info("New member added: %s (%s)", member_id, name)
+
+        return {
+            "id": member_id, "name": name, "age": age, "bmi": bmi,
+            "activity_level": activity_level,
+            "hr_low": hr_low, "hr_high": hr_high,
+        }

@@ -93,6 +93,15 @@ def get_report(schedule: str):
     except ValueError as e:
         return {"error": str(e)}
 
+@app.post("/api/members/add")
+def add_member():
+    """Simulate a new member tapping into the gym — generates a full health profile."""
+    try:
+        member = db.add_member()
+        return {"success": True, "member": member}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 
 # ── Demos API ─────────────────────────────────────────────────────────────────
 

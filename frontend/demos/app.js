@@ -210,6 +210,33 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
   }
 });
 
+document.getElementById('btn-add-member').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-add-member');
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  try {
+    const res = await apiFetch('/api/members/add', { method: 'POST' });
+    if (res.success) {
+      const m = res.member;
+      appendLogEntry({
+        type: 'result', arrow: 'System → DatabaseController',
+        msg: `New member tapped in: ${m.name} (${m.id}) — Age: ${m.age}, BMI: ${m.bmi}, Activity: ${m.activity_level}, HR: ${m.hr_low}–${m.hr_high} bpm`,
+        ts: new Date().toISOString(),
+      });
+      // Switch to Members tab and refresh
+      currentTable = 'members';
+      await loadDbState();
+    } else {
+      appendLogEntry({ type: 'error', arrow: 'System', msg: `Failed to add member: ${res.error}`, ts: new Date().toISOString() });
+    }
+  } catch (e) {
+    alert('Add member failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '➕ Add Member';
+  }
+});
+
 document.getElementById('btn-refresh-db').addEventListener('click', loadDbState);
 document.getElementById('btn-clear-log').addEventListener('click', () => {
   logArea.innerHTML = '<div class="log-placeholder">Log cleared.</div>';
