@@ -245,6 +245,14 @@ class DatabaseController:
              "activity_level": "low", "heart_rate_threshold_low": 50.0, "heart_rate_threshold_high": 140.0},
             {"id": "member_003", "name": "Carol Davis", "age": 28, "bmi": 21.1,
              "activity_level": "high", "heart_rate_threshold_low": 60.0, "heart_rate_threshold_high": 185.0},
+            {"id": "member_004", "name": "David Lee", "age": 35, "bmi": 24.3,
+             "activity_level": "moderate", "heart_rate_threshold_low": 52.0, "heart_rate_threshold_high": 160.0},
+            {"id": "member_005", "name": "Emma Wilson", "age": 29, "bmi": 20.8,
+             "activity_level": "high", "heart_rate_threshold_low": 58.0, "heart_rate_threshold_high": 180.0},
+            {"id": "member_006", "name": "Frank Martinez", "age": 41, "bmi": 26.0,
+             "activity_level": "low", "heart_rate_threshold_low": 48.0, "heart_rate_threshold_high": 145.0},
+            {"id": "member_007", "name": "Grace Kim", "age": 26, "bmi": 21.9,
+             "activity_level": "high", "heart_rate_threshold_low": 55.0, "heart_rate_threshold_high": 175.0},
         ]
         with self._session() as session:
             for m in SEED:
