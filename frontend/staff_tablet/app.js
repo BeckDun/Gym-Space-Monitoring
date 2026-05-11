@@ -1,10 +1,12 @@
 'use strict';
 
-const ZONE_CAPS = { zone_a: 30, zone_b: 25, zone_c: 20, zone_d: 20 };
-const alertList  = document.getElementById('alert-list');
-const alertCount = document.getElementById('alert-count');
-const wsStatus   = document.getElementById('ws-status');
-const dbAlerts   = document.getElementById('db-alerts');
+const ZONE_CAPS = { cardio_zone: 5, smart_machine_zone: 5, cycling_zone: 5, functional_zone: 5 };
+const alertList      = document.getElementById('alert-list');
+const criticalSection = document.getElementById('critical-section');
+const criticalList   = document.getElementById('critical-list');
+const alertCount     = document.getElementById('alert-count');
+const wsStatus       = document.getElementById('ws-status');
+const dbAlerts       = document.getElementById('db-alerts');
 
 let alerts = {};  // alert_id → alert object
 
@@ -18,11 +20,19 @@ function connectWS() {
   };
 
   ws.onmessage = (e) => {
-    const alert = JSON.parse(e.data);
-    if (!alert.resolved) {
-      alerts[alert.alert_id] = alert;
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'member_update') {
+      updateMemberCount(msg.in_gym_count);
+      return;
+    }
+    if (msg.type === 'zone_update') {
+      updateZonesLive(msg.zones || {}, msg.alert_states || {});
+      return;
+    }
+    if (!msg.resolved) {
+      alerts[msg.alert_id] = msg;
     } else {
-      delete alerts[alert.alert_id];
+      delete alerts[msg.alert_id];
     }
     renderAlerts();
   };
@@ -36,38 +46,57 @@ function connectWS() {
   ws.onerror = () => ws.close();
 }
 
-// ── Render active alerts ──────────────────────────────────────────────────────
+// ── Build alert card HTML ─────────────────────────────────────────────────────
+function buildAlertCard(a) {
+  const card = document.createElement('div');
+  card.className = `alert-card ${a.severity}`;
+  card.dataset.id = a.alert_id;
+  const ts = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '';
+  card.innerHTML = `
+    <div class="alert-top">
+      <span class="sev-badge">${a.severity}</span>
+      <span class="alert-zone">${a.zone_id || ''}</span>
+      <span class="alert-ts">${ts}</span>
+    </div>
+    <div class="alert-desc">${esc(a.description || '')}</div>
+    ${a.member_id ? `<div class="alert-member">Member: ${esc(a.member_id)}</div>` : ''}
+    <button class="resolve-btn" onclick="resolveAlert('${a.alert_id}')">Resolved</button>
+  `;
+  return card;
+}
+
+// ── Render active alerts — CRITICAL pinned, others scrollable ─────────────────
 function renderAlerts() {
   const list = Object.values(alerts).filter(a => !a.resolved);
   alertCount.textContent = list.length;
   alertCount.classList.toggle('visible', list.length > 0);
 
-  if (!list.length) {
-    alertList.innerHTML = '<div class="empty-state">No active alerts.</div>';
+  const criticals = list.filter(a => a.severity === 'CRITICAL');
+  const others    = list.filter(a => a.severity !== 'CRITICAL').sort((a, b) => {
+    const sev = { WARNING: 0, INFO: 1 };
+    return (sev[a.severity] ?? 2) - (sev[b.severity] ?? 2);
+  });
+
+  // Pinned critical section
+  if (criticals.length) {
+    criticalSection.classList.remove('hidden');
+    criticalList.innerHTML = '';
+    criticals.forEach(a => criticalList.appendChild(buildAlertCard(a)));
+  } else {
+    criticalSection.classList.add('hidden');
+    criticalList.innerHTML = '';
+  }
+
+  // Scrollable warning / info list
+  if (!others.length) {
+    alertList.innerHTML = criticals.length
+      ? '<div class="empty-state">No additional alerts.</div>'
+      : '<div class="empty-state">No active alerts.</div>';
     return;
   }
 
   alertList.innerHTML = '';
-  list.sort((a, b) => {
-    const sev = { CRITICAL: 0, WARNING: 1, INFO: 2 };
-    return (sev[a.severity] ?? 3) - (sev[b.severity] ?? 3);
-  }).forEach(a => {
-    const card = document.createElement('div');
-    card.className = `alert-card ${a.severity}`;
-    card.dataset.id = a.alert_id;
-    const ts = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '';
-    card.innerHTML = `
-      <div class="alert-top">
-        <span class="sev-badge">${a.severity}</span>
-        <span class="alert-zone">${a.zone_id || ''}</span>
-        <span class="alert-ts">${ts}</span>
-      </div>
-      <div class="alert-desc">${esc(a.description || '')}</div>
-      ${a.member_id ? `<div class="alert-member">Member: ${esc(a.member_id)}</div>` : ''}
-      <button class="resolve-btn" onclick="resolveAlert('${a.alert_id}')">Mark Resolved</button>
-    `;
-    alertList.appendChild(card);
-  });
+  others.forEach(a => alertList.appendChild(buildAlertCard(a)));
 }
 
 // ── Resolve alert ─────────────────────────────────────────────────────────────
@@ -123,6 +152,24 @@ function updateZones(snapshots) {
   });
 }
 
+// Live zone update pushed via WebSocket — includes demo alert_states so the
+// zone card shows overcrowded/near-capacity even before the real cap is reached.
+function updateZonesLive(counts, alertStates) {
+  document.querySelectorAll('.zone-card').forEach(card => {
+    const zone  = card.dataset.zone;
+    if (!(zone in counts)) return;
+    const count = counts[zone] || 0;
+    const cap   = ZONE_CAPS[zone] || 20;
+    const pct   = Math.min(100, Math.round((count / cap) * 100));
+    card.querySelector('.zone-count').textContent = count;
+    card.querySelector('.zone-fill').style.width  = pct + '%';
+    card.classList.remove('overcrowded', 'near-capacity');
+    const state = alertStates[zone];
+    if (state === 'overcrowded'   || count >= cap)       card.classList.add('overcrowded');
+    else if (state === 'near-capacity' || count >= cap * 0.8) card.classList.add('near-capacity');
+  });
+}
+
 async function loadDbAlerts(rows) {
   if (!rows) {
     try {
@@ -150,9 +197,25 @@ async function loadDbAlerts(rows) {
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── Member count ──────────────────────────────────────────────────────────────
+function updateMemberCount(count) {
+  const el = document.getElementById('member-count');
+  if (el) el.textContent = `${count} in gym`;
+}
+
+async function loadMemberCount() {
+  try {
+    const data = await fetch('/api/members/status').then(r => r.json());
+    const count = (data.members || []).filter(m => m.in_gym).length;
+    updateMemberCount(count);
+  } catch { /* ignore */ }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 connectWS();
 pollAlerts();
 loadDbState();
+loadMemberCount();
 setInterval(loadDbState, 5000);
 setInterval(pollAlerts, 3000);
+setInterval(loadMemberCount, 10000);

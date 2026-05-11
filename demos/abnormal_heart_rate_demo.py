@@ -20,7 +20,7 @@ from backend.sensor.sensor_driver import WristbandDriver
 from backend.sensor.sensor_interface import SensorInterface
 
 MEMBER_ID = "member_001"
-ZONE_ID = "zone_b"
+ZONE_ID = "smart_machine_zone"
 
 
 def main() -> None:

@@ -59,6 +59,16 @@ class DeviceDriver:
     def unregister_wristband(self, member_id: str) -> None:
         self.active_wristbands.pop(member_id, None)
 
+    def broadcast_to_tablets(self, data: dict) -> None:
+        """Broadcast arbitrary JSON to all connected staff tablets (non-alert messages)."""
+        payload = json.dumps(data)
+        for device_id, ws in list(self.active_staff_tablets.items()):
+            try:
+                asyncio.get_event_loop().create_task(ws.send_text(payload))
+            except Exception as exc:
+                logger.error("[TABLET %s] Broadcast failed: %s", device_id, exc)
+                self.active_staff_tablets.pop(device_id, None)
+
     def push_to_tablet(self, alert: Alert) -> None:  # SAD: pushToTablet(Alert)
         """Broadcast alert JSON to all connected staff tablets."""
         payload = json.dumps(alert.to_dict())

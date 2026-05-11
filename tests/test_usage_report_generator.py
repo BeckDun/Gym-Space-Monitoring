@@ -67,9 +67,9 @@ class TestSummarizeOccupancy:
     def test_peak_count(self):
         gen, _ = _make_generator()
         records = [
-            {"zone_id": "zone_a", "count": 10, "timestamp": "2024-01-01T10:00"},
-            {"zone_id": "zone_a", "count": 25, "timestamp": "2024-01-01T11:00"},
-            {"zone_id": "zone_a", "count": 15, "timestamp": "2024-01-01T12:00"},
+            {"zone_id": "cardio_zone", "count": 10, "timestamp": "2024-01-01T10:00"},
+            {"zone_id": "cardio_zone", "count": 25, "timestamp": "2024-01-01T11:00"},
+            {"zone_id": "cardio_zone", "count": 15, "timestamp": "2024-01-01T12:00"},
         ]
         result = gen._summarize_occupancy(records)
         assert result["peak_count"] == 25
@@ -77,21 +77,21 @@ class TestSummarizeOccupancy:
     def test_average_count(self):
         gen, _ = _make_generator()
         records = [
-            {"zone_id": "zone_a", "count": 10, "timestamp": "t"},
-            {"zone_id": "zone_a", "count": 20, "timestamp": "t"},
+            {"zone_id": "cardio_zone", "count": 10, "timestamp": "t"},
+            {"zone_id": "cardio_zone", "count": 20, "timestamp": "t"},
         ]
         result = gen._summarize_occupancy(records)
         assert result["average_count"] == 15.0
 
-    def test_zone_breakdown_present(self):
+    def test_smart_machine_zonereakdown_present(self):
         gen, _ = _make_generator()
         records = [
-            {"zone_id": "zone_a", "count": 10, "timestamp": "t"},
-            {"zone_id": "zone_b", "count": 5, "timestamp": "t"},
+            {"zone_id": "cardio_zone", "count": 10, "timestamp": "t"},
+            {"zone_id": "smart_machine_zone", "count": 5, "timestamp": "t"},
         ]
         result = gen._summarize_occupancy(records)
-        assert "zone_a" in result["zone_breakdown"]
-        assert "zone_b" in result["zone_breakdown"]
+        assert "cardio_zone" in result["smart_machine_zonereakdown"]
+        assert "smart_machine_zone" in result["smart_machine_zonereakdown"]
 
 
 class TestSummarizeAlerts:

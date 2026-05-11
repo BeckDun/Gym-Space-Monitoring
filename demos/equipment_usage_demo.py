@@ -20,12 +20,12 @@ from backend.sensor.sensor_driver import EquipmentDriver
 from backend.sensor.sensor_interface import SensorInterface
 
 MACHINES = [
-    ("machine_press_01", "zone_a"),
-    ("machine_row_01", "zone_b"),
-    ("machine_press_01", "zone_a"),
-    ("machine_curl_01", "zone_c"),
-    ("machine_row_01", "zone_b"),
-    ("machine_press_01", "zone_a"),
+    ("machine_press_01", "cardio_zone"),
+    ("machine_row_01", "smart_machine_zone"),
+    ("machine_press_01", "cardio_zone"),
+    ("machine_curl_01", "cycling_zone"),
+    ("machine_row_01", "smart_machine_zone"),
+    ("machine_press_01", "cardio_zone"),
 ]
 
 

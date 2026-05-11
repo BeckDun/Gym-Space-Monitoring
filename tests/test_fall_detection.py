@@ -42,36 +42,36 @@ class TestAnalyzeMLLMOutput:
 
     def test_critical_alert_above_threshold(self):
         fd, ctrl = _make_fd(threshold=6.0)
-        fd.analyze_mllm_output("Fall: 8, Confidence: 9", "zone_a")
+        fd.analyze_mllm_output("Fall: 8, Confidence: 9", "cardio_zone")
         ctrl.receive_alert_trigger.assert_called_once()
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "CRITICAL"
 
     def test_warning_alert_between_4_and_threshold(self):
         fd, ctrl = _make_fd(threshold=6.0)
-        fd.analyze_mllm_output("Fall: 5, Confidence: 6", "zone_a")
+        fd.analyze_mllm_output("Fall: 5, Confidence: 6", "cardio_zone")
         ctrl.receive_alert_trigger.assert_called_once()
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "WARNING"
 
     def test_no_alert_below_4(self):
         fd, ctrl = _make_fd(threshold=6.0)
-        fd.analyze_mllm_output("Fall: 3, Confidence: 2", "zone_a")
+        fd.analyze_mllm_output("Fall: 3, Confidence: 2", "cardio_zone")
         ctrl.receive_alert_trigger.assert_not_called()
 
     def test_no_alert_when_score_zero(self):
         fd, ctrl = _make_fd(threshold=6.0)
-        fd.analyze_mllm_output("No fall detected", "zone_a")
+        fd.analyze_mllm_output("No fall detected", "cardio_zone")
         ctrl.receive_alert_trigger.assert_not_called()
 
     def test_stores_mllm_text_output(self):
         fd, _ = _make_fd()
-        fd.analyze_mllm_output("Fall: 8, Confidence: 9", "zone_a")
+        fd.analyze_mllm_output("Fall: 8, Confidence: 9", "cardio_zone")
         assert fd.mllm_text_output == "Fall: 8, Confidence: 9"
 
     def test_critical_at_exactly_threshold(self):
         fd, ctrl = _make_fd(threshold=6.0)
-        fd.analyze_mllm_output("Fall: 6, Confidence: 7", "zone_a")
+        fd.analyze_mllm_output("Fall: 6, Confidence: 7", "cardio_zone")
         event = ctrl.receive_alert_trigger.call_args[0][0]
         assert event.payload["severity"] == "CRITICAL"
 
@@ -82,12 +82,12 @@ class TestTriggerAlert:
     def test_trigger_creates_alert_event(self):
         fd, ctrl = _make_fd()
         fd.mllm_text_output = "Fall: 8, Confidence: 9"
-        fd.trigger_alert("CRITICAL", "zone_b")
+        fd.trigger_alert("CRITICAL", "smart_machine_zone")
         ctrl.receive_alert_trigger.assert_called_once()
 
     def test_trigger_sets_zone_id(self):
         fd, ctrl = _make_fd()
         fd.mllm_text_output = "Fall: 8, Confidence: 9"
-        fd.trigger_alert("CRITICAL", "zone_c")
+        fd.trigger_alert("CRITICAL", "cycling_zone")
         event = ctrl.receive_alert_trigger.call_args[0][0]
-        assert event.zone_id == "zone_c"
+        assert event.zone_id == "cycling_zone"

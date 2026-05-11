@@ -27,6 +27,8 @@ system_controller = SystemController(device_driver=device_driver, database_contr
 async def lifespan(app: FastAPI):
     db.init_db()
     db.seed_members()
+    from backend.demos import demo_runner
+    demo_runner.set_shared_components(db, device_driver, system_controller)
     logger.info("GSM backend started.")
     yield
     logger.info("GSM backend shutting down.")
@@ -93,16 +95,54 @@ def get_report(schedule: str):
     except ValueError as e:
         return {"error": str(e)}
 
+@app.post("/api/members/add")
+def add_member():
+    """Simulate a new member tapping into the gym — generates a full health profile."""
+    try:
+        member = db.add_member()
+        return {"success": True, "member": member}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/tap-in/{member_id}")
+def tap_in_member(member_id: str):
+    """Member taps NFC at entrance — EntranceDriver → SensorInterface → DatabaseController.log_session()"""
+    from backend.db.models import Member as MemberModel
+    from backend.sensor.sensor_driver import EntranceDriver
+    from backend.sensor.sensor_interface import SensorInterface
+    with db._session() as session:
+        m = session.query(MemberModel).filter_by(id=member_id).first()
+        if not m:
+            return {"success": False, "error": f"Member {member_id} not found"}
+        member_name = m.name
+    driver = EntranceDriver(member_id=member_id, action="entry")
+    raw = driver.read()
+    si = SensorInterface()
+    event = si.normalize_signal(raw)   # type="session", payload={action:"entry"}
+    sess_info = db.log_session(member_id=member_id, action="entry")
+    in_gym_count = sum(1 for m in db.get_members_with_status() if m["in_gym"])
+    device_driver.broadcast_to_tablets({"type": "member_update", "in_gym_count": in_gym_count})
+    return {"success": True, "member_id": member_id, "name": member_name, **sess_info}
+
+
+@app.get("/api/members/status")
+def get_members_status():
+    return {"members": db.get_members_with_status()}
+
 
 # ── Demos API ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/demos/stream/{demo_name}", include_in_schema=False)
-async def stream_demo(demo_name: str):
-    """SSE endpoint — streams step-by-step log entries for the demos page."""
+async def stream_demo(demo_name: str, video: str | None = None):
+    """SSE endpoint — streams step-by-step log entries for the demos page.
+
+    Optional ?video=<path> selects which asset video the MLLM demos use.
+    """
     from backend.demos import demo_runner
 
     async def event_generator():
-        async for entry in demo_runner.run(demo_name):
+        async for entry in demo_runner.run(demo_name, video_path=video):
             yield f"data: {json.dumps(entry)}\n\n"
 
     return StreamingResponse(
@@ -124,12 +164,13 @@ def demo_db_state():
 @app.post("/api/demos/reset")
 def reset_demo_db():
     """Wipe all demo data and re-seed members."""
-    from backend.db.models import AlertLog, BiometricSnapshot, EquipmentUsage, OccupancySnapshot
+    from backend.db.models import AlertLog, BiometricSnapshot, EquipmentUsage, GymSession, OccupancySnapshot
     with db._session() as session:
         session.query(AlertLog).delete()
         session.query(BiometricSnapshot).delete()
         session.query(EquipmentUsage).delete()
         session.query(OccupancySnapshot).delete()
+        session.query(GymSession).delete()
         session.commit()
     # Clear in-memory active alerts
     system_controller.active_alerts.clear()
@@ -175,4 +216,5 @@ async def websocket_wristband(websocket: WebSocket, member_id: str):
 # ── Static files (must come after all API/page routes) ───────────────────────
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 app.mount("/video", StaticFiles(directory="."), name="video_files")

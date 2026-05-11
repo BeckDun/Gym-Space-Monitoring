@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GSM — Demo Center</title>
-  <link rel="stylesheet" href="/static/demos/styles.css" />
+  <link rel="stylesheet" href="/static/demos/styles.css?v=3" />
 </head>
 <body>
   <header>
@@ -29,12 +29,44 @@
         <span class="label">Fall Detection</span>
         <span class="flow">Camera → MLLM → FallDetection → Controller</span>
       </button>
+      <div class="clip-picker" data-for="fall_detection">
+        <button class="clip-opt active"
+                data-demo="fall_detection"
+                data-clip="assets/fall_obvious.mp4"
+                data-asset="/assets/fall_obvious.mp4"
+                title="High fall score → alert triggered">
+          ⬇ Obvious fall
+        </button>
+        <button class="clip-opt"
+                data-demo="fall_detection"
+                data-clip="assets/fall_trip_recovery.mp4"
+                data-asset="/assets/fall_trip_recovery.mp4"
+                title="Low fall score → no alert (true negative)">
+          ↩ Trip &amp; recovery
+        </button>
+      </div>
 
       <button class="demo-btn" data-demo="conflict_detection" data-video="true">
         <span class="icon">📹</span>
         <span class="label">Member Conflict</span>
         <span class="flow">Camera → MLLM → ConflictDetection → Controller</span>
       </button>
+      <div class="clip-picker" data-for="conflict_detection">
+        <button class="clip-opt active"
+                data-demo="conflict_detection"
+                data-clip="assets/conflict_fight.mp4"
+                data-asset="/assets/conflict_fight.mp4"
+                title="High conflict score → alert triggered">
+          👊 Real altercation
+        </button>
+        <button class="clip-opt"
+                data-demo="conflict_detection"
+                data-clip="assets/conflict_push.mp4"
+                data-asset="/assets/conflict_push.mp4"
+                title="Low conflict score → no alert (true negative)">
+          🤝 Simple push
+        </button>
+      </div>
 
       <button class="demo-btn" data-demo="heart_rate" data-video="false">
         <span class="icon">💓</span>
@@ -55,6 +87,16 @@
       </button>
 
       <div class="sidebar-actions">
+        <div class="action-section-label">Member Actions</div>
+        <button id="btn-add-member" class="btn-secondary">➕ Register New Member</button>
+        <div class="tap-in-row">
+          <select id="tap-in-select" class="tap-in-select">
+            <option value="">— select member —</option>
+          </select>
+          <button id="btn-tap-in" class="btn-tap-in">Tap In</button>
+        </div>
+
+        <div class="action-section-label" style="margin-top:8px;">System</div>
         <button id="btn-reset" class="btn-secondary">Reset Database</button>
         <button id="btn-refresh-db" class="btn-secondary">Refresh DB View</button>
       </div>
@@ -100,6 +142,17 @@
             </div>
           </div>
 
+          <!-- Member Status panel -->
+          <div class="panel" id="panel-members">
+            <div class="panel-header">
+              <span>Member Status</span>
+              <span id="member-status-counts" class="member-status-counts"></span>
+            </div>
+            <div class="member-list" id="member-list">
+              <div class="db-placeholder">Loading members…</div>
+            </div>
+          </div>
+
           <!-- Database panel -->
           <div class="panel" id="panel-db">
             <div class="panel-header">
@@ -110,6 +163,7 @@
                 <button class="db-tab" data-table="biometric_snapshots">Biometrics</button>
                 <button class="db-tab" data-table="occupancy_snapshots">Occupancy</button>
                 <button class="db-tab" data-table="members">Members</button>
+                <button class="db-tab" data-table="gym_sessions">Sessions</button>
               </div>
             </div>
             <div class="db-area" id="db-area">
@@ -121,6 +175,6 @@
     </main>
   </div>
 
-  <script src="/static/demos/app.js"></script>
+  <script src="/static/demos/app.js?v=3"></script>
 </body>
 </html>

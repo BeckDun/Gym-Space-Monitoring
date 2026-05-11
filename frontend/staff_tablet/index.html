@@ -26,6 +26,14 @@
         <span>Active Alerts</span>
         <span id="alert-count" class="badge-count">0</span>
       </div>
+
+      <!-- Pinned critical alerts — always visible, not scrolled away -->
+      <div id="critical-section" class="critical-section hidden">
+        <div class="critical-section-header">CRITICAL — REQUIRES IMMEDIATE ATTENTION</div>
+        <div id="critical-list" class="critical-list"></div>
+      </div>
+
+      <!-- Warning / Info alerts -->
       <div id="alert-list" class="alert-list">
         <div class="empty-state">No active alerts.</div>
       </div>
@@ -33,35 +41,40 @@
 
     <!-- Zone occupancy -->
     <div class="zones-col">
-      <div class="col-header">Zone Occupancy</div>
+      <div class="col-header">
+        Zone Occupancy
+        <span id="member-count" class="member-count-badge">— in gym</span>
+      </div>
       <div class="zone-grid" id="zone-grid">
-        <div class="zone-card" data-zone="zone_a">
-          <div class="zone-name">Zone A</div>
+        <div class="zone-card" data-zone="cardio_zone">
+          <div class="zone-name">Cardio Zone</div>
           <div class="zone-count">—</div>
           <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
-          <div class="zone-cap">Capacity: 30</div>
+          <div class="zone-cap">Capacity: 5</div>
         </div>
-        <div class="zone-card" data-zone="zone_b">
-          <div class="zone-name">Zone B</div>
+        <div class="zone-card" data-zone="smart_machine_zone">
+          <div class="zone-name">Smart Machine Zone</div>
           <div class="zone-count">—</div>
           <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
-          <div class="zone-cap">Capacity: 25</div>
+          <div class="zone-cap">Capacity: 5</div>
         </div>
-        <div class="zone-card" data-zone="zone_c">
-          <div class="zone-name">Zone C</div>
+        <div class="zone-card" data-zone="cycling_zone">
+          <div class="zone-name">Cycling Zone</div>
           <div class="zone-count">—</div>
           <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
-          <div class="zone-cap">Capacity: 20</div>
+          <div class="zone-cap">Capacity: 5</div>
         </div>
-        <div class="zone-card" data-zone="zone_d">
-          <div class="zone-name">Zone D</div>
+        <div class="zone-card" data-zone="functional_zone">
+          <div class="zone-name">Functional Zone</div>
           <div class="zone-count">—</div>
           <div class="zone-bar"><div class="zone-fill" style="width:0%"></div></div>
-          <div class="zone-cap">Capacity: 20</div>
+          <div class="zone-cap">Capacity: 5</div>
         </div>
       </div>
 
-      <div class="col-header" style="margin-top:16px;">Recent DB Alerts</div>
+      <div class="col-header" style="margin-top:16px;">
+        <span>Logged Alerts</span>
+      </div>
       <div id="db-alerts" class="db-alerts"></div>
     </div>
   </div>

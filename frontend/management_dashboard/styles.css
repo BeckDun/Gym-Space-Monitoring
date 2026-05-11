@@ -6,13 +6,16 @@
   --surface2: #222535;
   --border: #2e3147;
   --accent: #4f8ef7;
+  --accent-dim: #2a4a8a;
   --text: #e2e4f0;
   --text-dim: #8890aa;
   --green: #3ecf8e;
   --yellow: #f5c242;
   --red: #f25757;
+  --red-dim: #5a1a1a;
+  --yellow-dim: #4a3a00;
   --radius: 8px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
@@ -33,6 +36,7 @@ nav { margin-left: auto; display: flex; gap: 12px; }
 nav a {
   color: var(--text-dim); text-decoration: none; font-size: 13px;
   padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border);
+  transition: all 0.15s;
 }
 nav a:hover { color: var(--text); border-color: var(--accent); }
 
@@ -65,6 +69,28 @@ nav a:hover { color: var(--text); border-color: var(--accent); }
 }
 .btn-primary:hover { opacity: 0.85; }
 .report-ts { font-size: 12px; color: var(--text-dim); margin-left: auto; }
+.live-member-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--green);
+  border: 1px solid rgba(62, 207, 142, 0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
 
 .summary-cards {
   display: grid;
@@ -136,3 +162,94 @@ tr:hover td { background: var(--surface2); }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Clickable alert rows */
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: #1e2235; }
+.status-resolved { color: var(--green); font-weight: 600; }
+.status-active   { color: var(--yellow); font-weight: 600; }
+
+/* Alert detail modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.hidden { display: none; }
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 420px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.modal-title { font-weight: 700; font-size: 14px; flex: 1; }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.modal-close:hover { color: var(--text); background: var(--border); }
+
+.modal-sev-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.sev-badge-CRITICAL { background: var(--red); color: #fff; }
+.sev-badge-WARNING  { background: var(--yellow); color: #000; }
+.sev-badge-INFO     { background: var(--accent); color: #fff; }
+
+.modal-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.modal-row { display: flex; gap: 12px; font-size: 13px; }
+.modal-label { color: var(--text-dim); min-width: 70px; font-size: 12px; padding-top: 1px; }
+.modal-desc-label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px; margin-top: 4px; }
+.modal-desc {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.modal-resolve-btn {
+  margin-top: 8px;
+  padding: 7px 16px;
+  background: var(--green);
+  border: none;
+  border-radius: var(--radius);
+  color: #000;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-end;
+}
+.modal-resolve-btn:hover { opacity: 0.85; }
