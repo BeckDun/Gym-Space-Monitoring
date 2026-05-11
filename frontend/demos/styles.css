@@ -13,13 +13,13 @@
   --green: #3ecf8e;
   --yellow: #f5c242;
   --red: #f25757;
-  --red-dim: #5a1a1a;
-  --yellow-dim: #4a3a00;
+  --red-dim: #3a0f0f;
+  --yellow-dim: #3a2a00;
   --blue-dim: #0d2a50;
   --sidebar-w: 260px;
   --header-h: 54px;
   --radius: 8px;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
@@ -48,7 +48,7 @@ header {
   letter-spacing: 2px;
 }
 .header-title { font-weight: 500; color: var(--text-dim); }
-nav { margin-left: auto; display: flex; gap: 16px; }
+nav { margin-left: auto; display: flex; gap: 12px; }
 nav a {
   color: var(--text-dim);
   text-decoration: none;
@@ -210,7 +210,7 @@ nav a:hover { color: var(--text); border-color: var(--accent); }
 .panel-header {
   padding: 8px 14px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -421,7 +421,7 @@ tr:hover td { background: var(--surface2); }
 .empty-row td { color: var(--text-dim); font-style: italic; text-align: center; }
 
 /* Scrollbars */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
