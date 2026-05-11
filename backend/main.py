@@ -95,6 +95,19 @@ def get_report(schedule: str):
     except ValueError as e:
         return {"error": str(e)}
 
+
+@app.get("/api/report/{schedule}/insights")
+def get_report_insights(schedule: str):
+    """Generate a Gemini-powered AI analysis for the given report period."""
+    from backend.reporting.usage_report_generator import UsageReportGenerator
+    gen = UsageReportGenerator(database_controller=db)
+    try:
+        report = gen.generate(schedule)
+        return gen.generate_ai_insights(report)
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.post("/api/members/add")
 def add_member():
     """Simulate a new member tapping into the gym — generates a full health profile."""

@@ -17,4 +17,4 @@ ZONE_THRESHOLDS: dict[str, int] = {
 
 FALL_CONFIDENCE_THRESHOLD: float = 6.0
 CONFLICT_CONFIDENCE_THRESHOLD: float = 6.0
-MLLM_MODEL: str = "gemini-2.0-flash"
+MLLM_MODEL: str = "gemini-2.5-flash"

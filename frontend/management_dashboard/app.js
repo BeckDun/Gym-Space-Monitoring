@@ -17,12 +17,86 @@ async function generateReport() {
     const mockLabel = report.is_mock ? ' — Demo Data (no API key)' : '';
     document.getElementById('report-ts').textContent =
       `Generated: ${new Date(report.generated_at).toLocaleString()} | Period: last ${schedule}${mockLabel}`;
+
+    // Kick off AI insights asynchronously — don't block the report render
+    fetchAiInsights(schedule);
   } catch (e) {
     alert('Failed to generate report: ' + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Generate Report';
   }
+}
+
+// ── AI Insights ───────────────────────────────────────────────────────────────
+
+async function fetchAiInsights(schedule) {
+  const panel   = document.getElementById('ai-insights-panel');
+  const loading = document.getElementById('ai-loading');
+  const content = document.getElementById('ai-content');
+  const errEl   = document.getElementById('ai-error');
+  const mock    = document.getElementById('ai-insights-mock-badge');
+
+  // Reset and show the panel in loading state
+  panel.classList.remove('hidden');
+  loading.classList.remove('hidden');
+  content.classList.add('hidden');
+  errEl.classList.add('hidden');
+  mock.classList.add('hidden');
+  content.innerHTML = '';
+
+  try {
+    const data = await fetch(`/api/report/${schedule}/insights`).then(r => r.json());
+
+    loading.classList.add('hidden');
+
+    if (!data.success) {
+      errEl.textContent = 'Gemini analysis failed: ' + (data.error || 'unknown error');
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    if (data.is_mock) mock.classList.remove('hidden');
+    content.innerHTML = renderInsightsMarkdown(data.text);
+    content.classList.remove('hidden');
+  } catch (e) {
+    loading.classList.add('hidden');
+    errEl.textContent = 'Failed to load AI insights: ' + e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+/** Convert the three-section markdown from Gemini into styled HTML. */
+function renderInsightsMarkdown(text) {
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      if (inList) { html += '</ul>'; inList = false; }
+      continue;
+    }
+
+    if (line.startsWith('## ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<h3 class="ai-section-heading">${esc(line.slice(3))}</h3>`;
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      if (!inList) { html += '<ul class="ai-bullets">'; inList = true; }
+      // Handle **bold** within bullet text
+      const inner = esc(line.slice(2)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html += `<li>${inner}</li>`;
+    } else if (line.startsWith('---')) {
+      if (inList) { html += '</ul>'; inList = false; }
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      const inner = esc(line).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html += `<p class="ai-para">${inner}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
 }
 
 function renderReport(report) {

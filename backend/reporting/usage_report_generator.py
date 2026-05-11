@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
@@ -7,6 +8,33 @@ from datetime import datetime, timedelta
 from backend.db.database_controller import DatabaseController, QueryRequest
 
 logger = logging.getLogger(__name__)
+
+# ── AI insights prompt ────────────────────────────────────────────────────────
+
+_INSIGHTS_PROMPT = """\
+You are a professional gym operations consultant. A gym management system has \
+collected the following usage data for the period specified. Analyse it and return \
+a concise, actionable management report with THREE sections exactly as shown below. \
+Use bullet points inside each section.
+
+## Equipment Recommendations
+Identify the most-used machines (candidates for adding more units) and the \
+least-used (candidates for removal or repositioning). Be specific about machine IDs.
+
+## Zone Optimization
+Identify which zones are overcrowded or approaching capacity and give concrete \
+suggestions for redistributing members or expanding/reconfiguring those spaces.
+
+## Safety & Alert Patterns
+Highlight recurring alert types, unresolved issues, or members who appear \
+repeatedly in alerts and suggest preventive actions.
+
+---
+DATA:
+{data}
+---
+Keep each bullet point under 25 words. Do not add extra sections.
+"""
 
 _SCHEDULE_DELTAS = {
     "hourly": timedelta(hours=1),
@@ -210,3 +238,77 @@ class UsageReportGenerator:
             "unresolved": len(records) - resolved,
             "records": records,  # individual alert records for clickable alert history
         }
+
+    # ── AI insights ───────────────────────────────────────────────────────────
+
+    def generate_ai_insights(self, report: dict) -> dict:
+        """
+        Pass the compiled report to Gemini and return structured AI insights.
+        Falls back to a mock response when no API key is configured.
+        """
+        from backend.config import GEMINI_API_KEY, MLLM_MODEL, USE_MOCK_MLLM
+
+        # Strip raw alert records from the payload — too verbose for the prompt
+        slim = {
+            "schedule": report.get("schedule"),
+            "period_start": report.get("period_start"),
+            "period_end": report.get("period_end"),
+            "equipment_summary": {
+                k: v for k, v in report.get("equipment_summary", {}).items()
+                if k != "records"
+            },
+            "occupancy_summary": report.get("occupancy_summary", {}),
+            "alert_summary": {
+                k: v for k, v in report.get("alert_summary", {}).items()
+                if k != "records"
+            },
+        }
+        data_str = json.dumps(slim, indent=2)
+
+        if USE_MOCK_MLLM:
+            return self._mock_ai_insights(slim)
+
+        try:
+            from google import genai
+            client = genai.Client(api_key=GEMINI_API_KEY)
+            prompt = _INSIGHTS_PROMPT.format(data=data_str)
+            response = client.models.generate_content(model=MLLM_MODEL, contents=prompt)
+            return {"success": True, "text": response.text}
+        except Exception as exc:
+            logger.error("AI insights generation failed: %s", exc)
+            return {"success": False, "error": str(exc)}
+
+    def _mock_ai_insights(self, slim: dict) -> dict:
+        """Deterministic mock response derived from the actual report data."""
+        eq = slim.get("equipment_summary", {})
+        occ = slim.get("occupancy_summary", {})
+        al = slim.get("alert_summary", {})
+        ranking = eq.get("usage_ranking", [])
+        breakdown = occ.get("smart_machine_zonereakdown", {})
+
+        top = ranking[0]["machine_id"] if ranking else "bench_press_01"
+        bottom = ranking[-1]["machine_id"] if len(ranking) > 1 else "lat_pulldown_01"
+        hotzone = max(breakdown, key=lambda z: breakdown[z].get("peak", 0), default="cardio_zone") \
+            if breakdown else "cardio_zone"
+        hotpeak = breakdown.get(hotzone, {}).get("peak", occ.get("peak_count", "?"))
+
+        text = f"""\
+## Equipment Recommendations
+- **{top}** is the most-used machine — consider adding a second unit to reduce wait times.
+- **{bottom}** has low utilisation — evaluate repositioning it to a higher-traffic area.
+- Machines with < 5 sessions in the period should be reviewed for removal or replacement.
+- Rotate underused machines to peak-hour zones to balance member flow.
+
+## Zone Optimization
+- **{hotzone}** hit a peak of {hotpeak} members — exceeding the capacity of 5; consider splitting this zone or adding queue management.
+- Introduce signage and staff guidance during peak hours to redirect members to lower-occupancy zones.
+- Evaluate converting underused floor space in low-traffic zones to expand high-demand areas.
+- Consider staggered entry scheduling if peak overcrowding recurs across multiple time slots.
+
+## Safety & Alert Patterns
+- {al.get("unresolved", 0)} alert(s) remain unresolved — prioritise review before the next session.
+- {al.get("warning", 0)} WARNING-level biometric alerts logged; follow up with affected members.
+- Recurring overcrowding in the same zone suggests a structural capacity issue, not a one-off event.
+- Ensure all CRITICAL alerts (falls, conflicts) trigger an immediate staff presence protocol.\
+"""
+        return {"success": True, "text": text, "is_mock": True}

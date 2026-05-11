@@ -9,11 +9,22 @@ from backend.sensor.sensor_interface import Event
 
 logger = logging.getLogger(__name__)
 
-CONFLICT_PROMPT = (
-    "Analyze this gym footage for member conflict. "
-    "Is there any aggressive or threatening physical behavior between patrons? "
-    "Respond ONLY in this exact format — Conflict: <1-10>, Confidence: <1-10>"
-)
+CONFLICT_PROMPT = """\
+You are a gym safety monitoring system. Analyze this gym security footage.
+
+Look for any aggressive, threatening, or violent physical behavior between people \
+(pushing, hitting, grabbing, fighting).
+
+Reply with EXACTLY two lines and nothing else. Use a single integer on each line:
+Conflict: <integer>
+Confidence: <integer>
+
+Scale: 1 = definitely not present, 10 = definitely present.
+
+Correct example:
+Conflict: 8
+Confidence: 9\
+"""
 
 
 class ConflictDetection:
@@ -65,8 +76,21 @@ class ConflictDetection:
 
     @staticmethod
     def _parse_score(text: str, key: str) -> float:
+        """
+        Extract numeric score from MLLM response text.
+        Handles both single values ('Conflict: 8') and ranges ('Conflict: 7-9'),
+        taking the higher end of a range so edge cases aren't under-counted.
+        """
+        range_match = re.search(
+            rf"{re.escape(key)}:\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)",
+            text, re.IGNORECASE,
+        )
+        if range_match:
+            return float(range_match.group(2))
+
         match = re.search(rf"{re.escape(key)}:\s*(\d+(?:\.\d+)?)", text, re.IGNORECASE)
         if match:
             return float(match.group(1))
+
         logger.warning("Could not parse '%s' score from: %r", key, text)
         return 0.0
