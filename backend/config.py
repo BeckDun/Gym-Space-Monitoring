@@ -8,10 +8,10 @@ DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///./gsm.db")
 USE_MOCK_MLLM: bool = os.environ.get("USE_MOCK_MLLM", "0") == "1" or not GEMINI_API_KEY
 
 ZONE_THRESHOLDS: dict[str, int] = {
-    "cardio_zone": 30,
-    "smart_machine_zone": 25,
-    "cycling_zone": 20,
-    "functional_zone": 20,
+    "cardio_zone": 5,
+    "smart_machine_zone": 5,
+    "cycling_zone": 5,
+    "functional_zone": 5,
     "entrance": 10,
 }
 

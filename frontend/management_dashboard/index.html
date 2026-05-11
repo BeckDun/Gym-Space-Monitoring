@@ -31,6 +31,10 @@
       </label>
       <button id="btn-generate" class="btn-primary">Generate Report</button>
       <span id="report-ts" class="report-ts"></span>
+      <span class="live-member-count">
+        <span class="live-dot"></span>
+        <span id="live-member-count">—</span> in gym
+      </span>
     </div>
 
     <!-- Summary cards -->
@@ -85,6 +89,26 @@
         <div class="table-wrap" id="alert-table">
           <div class="empty">Run a report to see data.</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert detail modal -->
+  <div id="alert-modal" class="modal-overlay hidden" onclick="closeAlertModal(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="modal-severity-badge" class="modal-sev-badge"></span>
+        <span class="modal-title">Alert Detail</span>
+        <button class="modal-close" onclick="closeAlertModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-row"><span class="modal-label">Zone</span><span id="modal-zone"></span></div>
+        <div class="modal-row"><span class="modal-label">Member</span><span id="modal-member"></span></div>
+        <div class="modal-row"><span class="modal-label">Time</span><span id="modal-ts"></span></div>
+        <div class="modal-row"><span class="modal-label">Status</span><span id="modal-status"></span></div>
+        <div class="modal-desc-label">Description</div>
+        <div id="modal-desc" class="modal-desc"></div>
+        <button id="modal-resolve-btn" class="modal-resolve-btn hidden" onclick="resolveFromModal()">Mark Resolved</button>
       </div>
     </div>
   </div>

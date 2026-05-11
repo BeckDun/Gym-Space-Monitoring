@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from backend.config import DATABASE_URL
-from backend.db.models import AlertLog, Base, BiometricSnapshot, EquipmentUsage, OccupancySnapshot
+from backend.db.models import AlertLog, Base, BiometricSnapshot, EquipmentUsage, GymSession, Member, OccupancySnapshot
 from backend.sensor.device_driver import Alert
 
 logger = logging.getLogger(__name__)
@@ -197,7 +197,6 @@ class DatabaseController:
 
     def get_full_state(self) -> dict:
         """Return a snapshot of all tables for the demos database viewer."""
-        from backend.db.models import AlertLog, BiometricSnapshot, EquipmentUsage, Member, OccupancySnapshot
         with self._session() as session:
             members = [
                 {"id": r.id, "name": r.name, "age": r.age, "activity_level": r.activity_level,
@@ -227,12 +226,20 @@ class DatabaseController:
                  "timestamp": r.timestamp.isoformat() if r.timestamp else None}
                 for r in session.query(OccupancySnapshot).order_by(OccupancySnapshot.timestamp.desc()).limit(20).all()
             ]
+            gym_sessions = [
+                {"id": r.id, "member_id": r.member_id,
+                 "entry_time": r.entry_time.isoformat() if r.entry_time else None,
+                 "exit_time": r.exit_time.isoformat() if r.exit_time else None,
+                 "zone_id": r.zone_id}
+                for r in session.query(GymSession).order_by(GymSession.entry_time.desc()).limit(20).all()
+            ]
         return {
             "members": members,
             "alert_logs": alerts,
             "equipment_usage": equipment,
             "biometric_snapshots": biometric,
             "occupancy_snapshots": occupancy,
+            "gym_sessions": gym_sessions,
         }
 
     def seed_members(self) -> None:
@@ -260,6 +267,69 @@ class DatabaseController:
                     session.add(Member(**m))
             session.commit()
         logger.info("Seed members ensured.")
+
+    def log_session(self, member_id: str, action: str) -> dict:
+        """Create a GymSession entry or close an open one. Returns session info."""
+        with self._session() as session:
+            if action == "entry":
+                record = GymSession(
+                    id=str(uuid4()),
+                    member_id=member_id,
+                    entry_time=datetime.utcnow(),
+                    exit_time=None,
+                    zone_id="entrance",
+                )
+                session.add(record)
+                session.commit()
+                logger.info("GymSession created: member %s tapped in", member_id)
+                return {
+                    "member_id": member_id,
+                    "action": action,
+                    "session_id": record.id,
+                    "entry_time": record.entry_time.isoformat(),
+                }
+            else:  # exit
+                open_session = (
+                    session.query(GymSession)
+                    .filter_by(member_id=member_id, exit_time=None)
+                    .order_by(GymSession.entry_time.desc())
+                    .first()
+                )
+                if open_session:
+                    open_session.exit_time = datetime.utcnow()
+                    session.commit()
+                    logger.info("GymSession closed: member %s tapped out", member_id)
+                    return {
+                        "member_id": member_id,
+                        "action": action,
+                        "session_id": open_session.id,
+                        "entry_time": open_session.entry_time.isoformat(),
+                    }
+                return {"member_id": member_id, "action": action, "session_id": None, "entry_time": None}
+
+    def get_members_with_status(self) -> list:
+        """Return all members with in_gym boolean and entry_time from open GymSession."""
+        with self._session() as session:
+            members = session.query(Member).all()
+            result = []
+            for m in members:
+                open_session = (
+                    session.query(GymSession)
+                    .filter_by(member_id=m.id, exit_time=None)
+                    .order_by(GymSession.entry_time.desc())
+                    .first()
+                )
+                result.append({
+                    "id": m.id,
+                    "name": m.name,
+                    "age": m.age,
+                    "activity_level": m.activity_level,
+                    "hr_low": m.heart_rate_threshold_low,
+                    "hr_high": m.heart_rate_threshold_high,
+                    "in_gym": open_session is not None,
+                    "entry_time": open_session.entry_time.isoformat() if open_session else None,
+                })
+            return result
 
     def add_member(self) -> dict:
         """Generate and insert a new member with a complete random health profile."""
